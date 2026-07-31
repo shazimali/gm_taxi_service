@@ -1,0 +1,124 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  DISPATCHER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(ADMIN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Vehicle {
+  id                String   @id @default(uuid())
+  name              String
+  slug              String   @unique
+  category          String
+  model             String
+  tagline           String   @db.Text
+  image             String
+  passengerCapacity Int
+  luggageCapacity   Int
+  rateHourly        Float?
+  features          Json
+  amenities         Json
+  description       String   @db.Text
+  ctaType           String   @default("both")
+  displayOrder      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("vehicles")
+}
+
+model Service {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  tagline      String   @db.Text
+  badge        String
+  icon         String
+  image        String
+  shortDesc    String   @db.Text
+  fullDesc     String   @db.Text
+  benefits     Json
+  keyFeatures  Json
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("services")
+}
+
+model Airport {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  name          String
+  description   String   @db.Text
+  sedanEstimate String?
+  suvEstimate   String?
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@map("airports")
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  confirmationNumber String        @unique
+  fullName           String
+  email              String
+  phone              String
+  serviceType        String
+  vehicleSlug        String?
+  pickupLocation     String
+  dropoffLocation    String?
+  pickupDate         String
+  pickupTime         String
+  passengers         Int           @default(1)
+  luggage            Int           @default(1)
+  flightNumber       String?
+  specialRequests    String?       @db.Text
+  status             BookingStatus @default(PENDING)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@map("bookings")
+}
+
+model SiteSetting {
+  id             String   @id @default("default")
+  phoneDisplay   String   @default("(617) 784-0264")
+  phoneTel       String   @default("16177840264")
+  dispatchEmail  String   @default("info@bostonluxurychauffeur.com")
+  serviceAddress String   @default("Boston, Massachusetts, USA")
+  heroTitleGold  String   @default("Boston Luxury Chauffeur")
+  heroTitleMain  String   @default("— Logan Airport Car Service")
+  heroSubtitle   String   @default("Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers")
+  updatedAt      DateTime @updatedAt
+
+  @@map("site_settings")
+}
