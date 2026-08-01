@@ -1,14 +1,22 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  gmlimoservices:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: gmlimoservices-next
+  gm_taxi_app:
+    image: ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
+    container_name: gm_taxi_app
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - global_network
+    volumes:
+      # Mount the .env file from VPS host (same pattern as your Laravel projects)
+      - /var/www/gm_taxi_service/.env:/app/.env:ro
+
+networks:
+  global_network:
+    external: true
