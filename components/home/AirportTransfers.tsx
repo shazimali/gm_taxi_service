@@ -20,7 +20,7 @@ export default async function AirportTransfers() {
       airports = dbAirports.map((ap) => ({
         code: ap.code,
         name: ap.name,
-        desc: ap.description,
+        desc: ap.description || '',
       }));
     }
   } catch (error) {
