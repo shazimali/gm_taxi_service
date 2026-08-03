@@ -1,9 +1,5 @@
-import React from 'react';
-import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+import Link from 'next/link';
 
 interface ServiceGridItem {
   id: string;
@@ -34,60 +30,6 @@ export default async function ServicesGrid() {
     }
   } catch (error) {
     console.error('Error fetching services from DB for home page:', error);
-  }
-
-  // Fallback if DB returns empty
-  if (services.length === 0) {
-    services = [
-      {
-        id: '1',
-        title: 'Airport Transportation',
-        tag: 'Airport Chauffeur',
-        image: '/images/Boston-Luxury-Chauffeur.webp',
-        description: 'Seamless Logan, TF Green, Manchester & Providence airport transfers with real-time flight monitoring and complimentary wait time.',
-        slug: 'airport-transfers',
-      },
-      {
-        id: '2',
-        title: 'Hourly Private Chauffeur',
-        tag: 'By The Hour',
-        image: '/images/Hourly-Chayffeur-Service-e1763051109937.jpg',
-        description: 'Book a dedicated chauffeur by the hour — ideal for roadshows, multi-stop corporate errands, and city-wide VIP escort.',
-        slug: 'hourly-chauffeur',
-      },
-      {
-        id: '3',
-        title: 'Long Distance City-to-City Transfer',
-        tag: 'Long Distance',
-        image: '/images/City-to-City-Transfer-e1763051857279.webp',
-        description: 'Flat-rate city-to-city rides between Boston, New York, Providence, Hartford & beyond — no surge pricing, ever.',
-        slug: 'point-to-point',
-      },
-      {
-        id: '4',
-        title: 'Luxury Chauffeur & Limousine',
-        tag: 'VIP Service',
-        image: '/images/Limousine-Service-e1763051925488.webp',
-        description: 'White-glove chauffeur service in late-model Lincoln Continentals, Cadillac CT6s, and Escalade ESVs.',
-        slug: 'corporate-accounts',
-      },
-      {
-        id: '5',
-        title: 'Event Limo Service',
-        tag: 'Special Event',
-        image: '/images/Event-Transportation-e1763052056749.webp',
-        description: 'Galas, concerts, sporting events, and corporate dinners — arrive on time, in style, without the parking hassle.',
-        slug: 'event-limo',
-      },
-      {
-        id: '6',
-        title: 'Private Wedding Limo',
-        tag: 'Weddings',
-        image: '/images/Wedding-Limo-Service-e1763052179994.webp',
-        description: 'Bespoke bridal transportation packages — rehearsal dinner through send-off, coordinated to the minute.',
-        slug: 'weddings-special-events',
-      },
-    ];
   }
 
   return (
