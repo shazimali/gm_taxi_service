@@ -11,3 +11,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+// Server bundle reloaded
+

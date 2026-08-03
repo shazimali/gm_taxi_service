@@ -1,59 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(request: Request) {
+export async function GET(req: Request) {
   try {
-    const body = await request.json();
-    const {
-      fullName,
-      email,
-      phone,
-      serviceType,
-      vehicleSlug,
-      pickupLocation,
-      dropoffLocation,
-      pickupDate,
-      pickupTime,
-      passengers,
-      luggage,
-      flightNumber,
-      specialRequests,
-    } = body;
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get('email');
 
-    if (!fullName || !email || !phone || !pickupLocation || !pickupDate || !pickupTime) {
-      return NextResponse.json({ error: 'Please fill in all required fields' }, { status: 400 });
-    }
+    const whereClause = email ? { email: email.toLowerCase() } : {};
 
-    const confirmationNumber = 'GML-' + Math.floor(100000 + Math.random() * 900000);
-
-    const booking = await prisma.booking.create({
-      data: {
-        confirmationNumber,
-        fullName,
-        email,
-        phone,
-        serviceType: serviceType || 'Airport Transportation',
-        vehicleSlug: vehicleSlug || 'executive-sedan',
-        pickupLocation,
-        dropoffLocation: dropoffLocation || '',
-        pickupDate,
-        pickupTime,
-        passengers: Number(passengers) || 1,
-        luggage: Number(luggage) || 1,
-        flightNumber: flightNumber || '',
-        specialRequests: specialRequests || '',
-        status: 'PENDING',
-      },
+    const bookings = await prisma.booking.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Booking reservation submitted successfully!',
-      confirmationNumber: booking.confirmationNumber,
-      booking,
-    });
-  } catch (error) {
-    console.error('Submit booking error:', error);
-    return NextResponse.json({ error: 'Failed to process booking submission' }, { status: 500 });
+    return NextResponse.json({ bookings });
+  } catch (error: any) {
+    console.error('Fetch Bookings Error:', error);
+    return NextResponse.json({ bookings: [] });
   }
 }

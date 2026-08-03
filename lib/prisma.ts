@@ -26,25 +26,38 @@ if (!process.env.DATABASE_URL) {
       });
     }
   } catch {
-    // Ignore error reading .env
+    // Ignore error loading .env
   }
 }
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+function getFreshClient(): PrismaClient {
+  try {
+    if (typeof require !== 'undefined' && require.cache) {
+      Object.keys(require.cache).forEach((key) => {
+        if (key.includes('@prisma/client') || key.includes('.prisma')) {
+          delete require.cache[key];
+        }
+      });
+    }
+  } catch {
+    // Edge runtime fallback
+  }
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+  const { PrismaClient: FreshPrismaClient } = require('@prisma/client');
+  return new FreshPrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
 }
 
+let activeClient = getFreshClient();
 
-
-
-
+export const prisma = new Proxy(activeClient as any, {
+  get(target, prop, receiver) {
+    const value = Reflect.get(target, prop, receiver);
+    if (typeof prop === 'string' && ['passenger', 'booking', 'admin', 'vehicle', 'service', 'siteSetting'].includes(prop) && !value) {
+      activeClient = getFreshClient();
+      return (activeClient as any)[prop];
+    }
+    return value;
+  },
+}) as PrismaClient;

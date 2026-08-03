@@ -17,8 +17,8 @@ export default async function FleetSection() {
         image: v.image,
         pax: v.passengerCapacity,
         luggage: v.luggageCapacity,
-        btnLayout: v.ctaType || 'both',
-        features: Array.isArray(v.features) ? v.features : [],
+        btnLayout: 'both',
+        features: typeof v.features === 'string' ? JSON.parse(v.features) : (Array.isArray(v.features) ? v.features : []),
       }));
     }
   } catch (err) {

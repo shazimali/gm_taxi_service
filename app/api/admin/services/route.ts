@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, slug, tagline, badge, icon, image, shortDesc, fullDesc, benefits, keyFeatures } = body;
+    const { name, slug, tagline, image, description, fullDetails, benefits, features } = body;
 
     if (!name || !slug) {
       return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
@@ -40,13 +40,12 @@ export async function POST(request: Request) {
         name,
         slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
         tagline: tagline || '',
-        badge: badge || 'Service',
-        icon: icon || '🚘',
         image: image || '/images/Limousine-Service-e1763051925488.webp',
-        shortDesc: shortDesc || '',
-        fullDesc: fullDesc || shortDesc || '',
-        benefits: Array.isArray(benefits) ? benefits : [],
-        keyFeatures: Array.isArray(keyFeatures) ? keyFeatures : [],
+        description: description || '',
+        fullDetails: fullDetails || description || '',
+        benefits: JSON.stringify(Array.isArray(benefits) ? benefits : []),
+        features: JSON.stringify(Array.isArray(features) ? features : []),
+        iconName: 'Car',
       },
     });
 
@@ -66,10 +65,17 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { id, ...data } = body;
+    const { id, badge, icon, shortDesc, keyFeatures, ...data } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Service ID is required' }, { status: 400 });
+    }
+
+    if (data.features && Array.isArray(data.features)) {
+      data.features = JSON.stringify(data.features);
+    }
+    if (data.benefits && Array.isArray(data.benefits)) {
+      data.benefits = JSON.stringify(data.benefits);
     }
 
     const service = await prisma.service.update({

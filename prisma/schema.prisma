@@ -1,76 +1,68 @@
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
-
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-enum Role {
-  ADMIN
-  DISPATCHER
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 enum BookingStatus {
   PENDING
   CONFIRMED
+  IN_PROGRESS
   COMPLETED
   CANCELLED
 }
 
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  role         Role     @default(ADMIN)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
 
-  @@map("users")
-}
-
-model Vehicle {
-  id                String   @id @default(uuid())
-  name              String
-  slug              String   @unique
-  category          String
-  model             String
-  tagline           String   @db.Text
-  image             String
-  passengerCapacity Int
-  luggageCapacity   Int
-  rateHourly        Float?
-  features          Json
-  amenities         Json
-  description       String   @db.Text
-  ctaType           String   @default("both")
-  displayOrder      Int      @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@map("vehicles")
+  @@map("admins")
 }
 
 model Service {
   id           String   @id @default(uuid())
-  name         String
   slug         String   @unique
-  tagline      String   @db.Text
-  badge        String
-  icon         String
+  name         String
+  tagline      String
+  description  String   @db.Text
+  fullDetails  String   @db.Text
   image        String
-  shortDesc    String   @db.Text
-  fullDesc     String   @db.Text
-  benefits     Json
-  keyFeatures  Json
+  features     String   @db.Text // JSON string array
+  benefits     String   @db.Text // JSON string array
+  iconName     String   @default("Car")
   displayOrder Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@map("services")
+}
+
+model Vehicle {
+  id                String   @id @default(uuid())
+  slug              String   @unique
+  name              String
+  category          String
+  model             String
+  passengerCapacity Int
+  luggageCapacity   Int
+  rateHourly        Float?
+  description       String   @db.Text
+  image             String
+  features          String   @db.Text // JSON string array
+  displayOrder      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("vehicles")
 }
 
 model Airport {
@@ -84,6 +76,21 @@ model Airport {
   createdAt     DateTime @default(now())
 
   @@map("airports")
+}
+
+model Passenger {
+  id               String    @id @default(uuid())
+  fullName         String
+  email            String    @unique
+  passwordHash     String
+  phone            String?
+  stripeCustomerId String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  bookings         Booking[]
+
+  @@map("passengers")
 }
 
 model Booking {
@@ -103,6 +110,14 @@ model Booking {
   flightNumber       String?
   specialRequests    String?       @db.Text
   status             BookingStatus @default(PENDING)
+
+  // Passenger & Stripe Hold Tracking
+  passengerId           String?
+  passenger             Passenger? @relation(fields: [passengerId], references: [id], onDelete: SetNull)
+  stripePaymentIntentId String?    @unique
+  paymentStatus         String     @default("PENDING") // PENDING, HOLD_PLACED, CAPTURED, CANCELLED_RELEASED, FAILED
+  estimatedPrice        Float?
+
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 

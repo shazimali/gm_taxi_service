@@ -427,15 +427,16 @@ p {
   padding: 0.5rem 0.9rem;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #222222;
+  color: #000000;
   border-radius: var(--radius-md);
-  transition: color var(--duration) var(--ease-out);
+  transition: color 0.2s ease;
 }
 
 .nav-menu a:hover,
+.nav-menu a.active,
 .nav-menu .current-menu-item>a,
 .nav-menu .current_page_item>a {
-  color: var(--clr-gold);
+  color: #b8860b !important;
 }
 
 /* Dropdown */

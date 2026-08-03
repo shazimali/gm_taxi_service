@@ -23,9 +23,9 @@ export default async function ServicesGrid() {
       services = dbServices.map((s) => ({
         id: s.id,
         title: s.name,
-        tag: s.badge || 'Service',
+        tag: s.tagline || 'Chauffeur Service',
         image: s.image || '/images/Boston-Luxury-Chauffeur.webp',
-        description: s.shortDesc || s.tagline || s.fullDesc,
+        description: s.description || s.tagline || s.fullDetails,
         slug: s.slug,
       }));
     }

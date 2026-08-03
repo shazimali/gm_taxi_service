@@ -23,6 +23,10 @@ export async function sendBookingQuote(prevState: BookingState, formData: FormDa
   const email = formData.get('email')?.toString() || '';
   const phone = formData.get('phone')?.toString() || '';
   const specialRequests = formData.get('specialRequests')?.toString() || '';
+  
+  const stripePaymentIntentId = formData.get('stripePaymentIntentId')?.toString() || null;
+  const paymentStatus = formData.get('paymentStatus')?.toString() || (stripePaymentIntentId ? 'HOLD_PLACED' : 'PENDING');
+  const estimatedPrice = Number(formData.get('estimatedPrice')?.toString()) || null;
 
   if (!fullName || !email || !phone || !pickupLocation || !pickupDate) {
     return {
@@ -34,12 +38,17 @@ export async function sendBookingQuote(prevState: BookingState, formData: FormDa
   const confirmationNumber = 'GML-' + Math.floor(100000 + Math.random() * 900000);
 
   try {
+    // Find matching passenger account if exists
+    const existingPassenger = await prisma.passenger.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
     // Save to local MySQL database via Prisma
     await prisma.booking.create({
       data: {
         confirmationNumber,
         fullName,
-        email,
+        email: email.toLowerCase(),
         phone,
         serviceType,
         vehicleSlug,
@@ -52,13 +61,17 @@ export async function sendBookingQuote(prevState: BookingState, formData: FormDa
         flightNumber,
         specialRequests,
         status: 'PENDING',
+        passengerId: existingPassenger?.id || null,
+        stripePaymentIntentId: stripePaymentIntentId,
+        paymentStatus: paymentStatus,
+        estimatedPrice: estimatedPrice,
       },
     });
 
     return {
       success: true,
       confirmationNumber,
-      message: `Your reservation request ${confirmationNumber} has been saved to the database! Our 24/7 dispatch desk is reviewing your route and will email your rate confirmation shortly.`,
+      message: `Your reservation request ${confirmationNumber} has been submitted! ${stripePaymentIntentId ? 'Funds pre-authorization hold placed successfully.' : 'Our dispatch desk is reviewing your trip details.'}`,
     };
   } catch (err) {
     console.error('Error saving booking to MySQL:', err);
