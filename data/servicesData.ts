@@ -44,7 +44,7 @@ export const SERVICES_DATA: ServiceItem[] = [
     tagline: 'Dedicated vehicle and chauffeur at your service for complete schedule flexibility.',
     icon: '🕐',
     badge: 'By The Hour',
-    image: '/images/Hourly-Chayffeur-Service-e1763051109937.jpe',
+    image: '/images/Hourly-Chayffeur-Service-e1763051109937.jpg',
     shortDesc: 'Book a dedicated chauffeur by the hour — ideal for roadshows, multi-stop corporate errands, and city-wide VIP escort.',
     fullDesc: 'When your day demands multiple stops, shifting agendas, or unpredictable meeting durations, our By-The-Hour (As Directed) service offers ultimate flexibility. Your private chauffeur remains on standby at every location, ensuring instant departure when you step out. No waiting for ride-share apps or worrying about parking in downtown Boston.',
     benefits: [

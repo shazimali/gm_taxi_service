@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 interface ServiceItem {
   id: string;
@@ -216,15 +217,12 @@ export default function ServicesAdminPage() {
                 />
               </div>
 
-              <div className="admin-form__group">
-                <label className="admin-form__label">Cover Image URL</label>
-                <input
-                  type="text"
-                  className="admin-form__input"
-                  value={f.image}
-                  onChange={(e) => set('image', e.target.value)}
-                />
-              </div>
+              <ImageUploader
+                label="Cover Image"
+                folder="services"
+                value={f.image}
+                onChange={(url) => set('image', url)}
+              />
 
               <div className="admin-form__group">
                 <label className="admin-form__label">Short Description</label>

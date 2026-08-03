@@ -36,7 +36,7 @@ export default async function AdminLayout({
               alt="GM Limo"
               className="admin-sidebar__logo"
             />
-            <span className="admin-sidebar__brand-title">TailAdmin Control</span>
+            <span className="admin-sidebar__brand-title">GM Executive Portal</span>
           </Link>
         </div>
 

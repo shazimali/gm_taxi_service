@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 interface Vehicle {
   id: string;
@@ -230,15 +231,12 @@ export default function FleetAdminPage() {
                 />
               </div>
 
-              <div className="admin-form__group">
-                <label className="admin-form__label">Image Path / URL</label>
-                <input
-                  type="text"
-                  className="admin-form__input"
-                  value={f.image}
-                  onChange={(e) => set('image', e.target.value)}
-                />
-              </div>
+              <ImageUploader
+                label="Vehicle Image"
+                folder="fleet"
+                value={f.image}
+                onChange={(url) => set('image', url)}
+              />
 
               <div className="admin-form__row--3">
                 <div>

@@ -16,6 +16,8 @@ services:
     volumes:
       # Mount the .env file from VPS host (same pattern as your Laravel projects)
       - /var/www/gm_taxi_service/.env:/app/.env:ro
+      # Persistent Media Storage Volume (Laravel storage/app/public equivalent)
+      - /var/www/gm_taxi_service/uploads:/app/public/uploads
 
 networks:
   global_network:

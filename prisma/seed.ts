@@ -151,7 +151,7 @@ async function main() {
       tagline: 'Dedicated vehicle and chauffeur at your service for complete schedule flexibility.',
       badge: 'By The Hour',
       icon: '🕐',
-      image: '/images/Hourly-Chayffeur-Service-e1763051109937.jpe',
+      image: '/images/Hourly-Chayffeur-Service-e1763051109937.jpg',
       shortDesc: 'Book a dedicated chauffeur by the hour — ideal for roadshows, multi-stop corporate errands, and city-wide VIP escort.',
       fullDesc: 'When your day demands multiple stops or unpredictable meeting durations, our By-The-Hour service offers ultimate flexibility.',
       benefits: ['Flexible Multi-Stop Itineraries', 'Chauffeur Standby', 'Zero Surge Multipliers'],
