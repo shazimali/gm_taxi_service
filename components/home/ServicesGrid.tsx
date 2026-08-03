@@ -16,7 +16,7 @@ export default async function ServicesGrid() {
 
   try {
     const dbServices = await prisma.service.findMany({
-      orderBy: { createdAt: 'asc' },
+      orderBy: { displayOrder: 'asc' },
     });
 
     if (dbServices && dbServices.length > 0) {
@@ -24,7 +24,7 @@ export default async function ServicesGrid() {
         id: s.id,
         title: s.name,
         tag: s.badge || 'Service',
-        image: s.image || 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=600&h=380&q=80',
+        image: s.image || '/images/Boston-Luxury-Chauffeur.webp',
         description: s.shortDesc || s.tagline || s.fullDesc,
         slug: s.slug,
       }));
@@ -39,8 +39,8 @@ export default async function ServicesGrid() {
       {
         id: '1',
         title: 'Airport Transportation',
-        tag: 'Airport Run',
-        image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=600&h=380&q=80',
+        tag: 'Airport Chauffeur',
+        image: '/images/Boston-Luxury-Chauffeur.webp',
         description: 'Seamless Logan, TF Green, Manchester & Providence airport transfers with real-time flight monitoring and complimentary wait time.',
         slug: 'airport-transfers',
       },
@@ -48,7 +48,7 @@ export default async function ServicesGrid() {
         id: '2',
         title: 'Hourly Private Chauffeur',
         tag: 'By The Hour',
-        image: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&h=380&q=80',
+        image: '/images/Hourly-Chayffeur-Service-e1763051109937.jpg',
         description: 'Book a dedicated chauffeur by the hour — ideal for roadshows, multi-stop corporate errands, and city-wide VIP escort.',
         slug: 'hourly-chauffeur',
       },
@@ -56,7 +56,7 @@ export default async function ServicesGrid() {
         id: '3',
         title: 'Long Distance City-to-City Transfer',
         tag: 'Long Distance',
-        image: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?auto=format&fit=crop&w=600&h=380&q=80',
+        image: '/images/City-to-City-Transfer-e1763051857279.webp',
         description: 'Flat-rate city-to-city rides between Boston, New York, Providence, Hartford & beyond — no surge pricing, ever.',
         slug: 'point-to-point',
       },
@@ -64,7 +64,7 @@ export default async function ServicesGrid() {
         id: '4',
         title: 'Luxury Chauffeur & Limousine',
         tag: 'VIP Service',
-        image: 'https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&w=600&h=380&q=80',
+        image: '/images/Limousine-Service-e1763051925488.webp',
         description: 'White-glove chauffeur service in late-model Lincoln Continentals, Cadillac CT6s, and Escalade ESVs.',
         slug: 'corporate-accounts',
       },
@@ -72,15 +72,15 @@ export default async function ServicesGrid() {
         id: '5',
         title: 'Event Limo Service',
         tag: 'Special Event',
-        image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=600&h=380&q=80',
+        image: '/images/Event-Transportation-e1763052056749.webp',
         description: 'Galas, concerts, sporting events, and corporate dinners — arrive on time, in style, without the parking hassle.',
-        slug: 'weddings-special-events',
+        slug: 'event-limo',
       },
       {
         id: '6',
         title: 'Private Wedding Limo',
         tag: 'Weddings',
-        image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&h=380&q=80',
+        image: '/images/Wedding-Limo-Service-e1763052179994.webp',
         description: 'Bespoke bridal transportation packages — rehearsal dinner through send-off, coordinated to the minute.',
         slug: 'weddings-special-events',
       },
