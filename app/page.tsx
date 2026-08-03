@@ -9,6 +9,9 @@ import Testimonials from '@/components/home/Testimonials';
 import BookingSteps from '@/components/home/BookingSteps';
 import FAQAccordion from '@/components/home/FAQAccordion';
 
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
 export default function HomePage() {
   return (
     <>

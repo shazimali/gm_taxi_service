@@ -2,6 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
 export default async function FleetSection() {
   let fleet: any[] = [];
 
@@ -34,44 +37,26 @@ export default async function FleetSection() {
         image: '/images/Businessedited-1024x526-1-e1751891182287.webp',
         pax: 3,
         luggage: 2,
-        btnLayout: 'book_only',
+        btnLayout: 'both',
         features: ['Leather Interior & Wi-Fi', '3 Passengers', '2 Large Suitcases', '2 Carry-on Bags'],
       },
       {
         name: 'Executive SUV',
-        model: 'Cadillac Escalade / Chevy Suburban',
-        image: '/images/suv.webp',
+        model: 'Chevy Suburban / GMC Yukon XL',
+        image: '/images/suburbanedited-1024x557-1-e1751891129532.webp',
         pax: 6,
         luggage: 5,
         btnLayout: 'both',
-        features: ['All-Wheel Drive Comfort', '6 Passengers', '5 Large Suitcases', '2 Carry-on Bags'],
+        features: ['Extra Legroom & Cargo Space', 'Up to 6 Passengers', '5 Large Suitcases', 'All-Wheel Drive Performance'],
       },
       {
-        name: 'Premium Luxury SUV',
-        model: 'Cadillac Escalade ESV',
-        image: '/images/blc89.webp',
+        name: 'Premium Escalade ESV',
+        model: 'Cadillac Escalade ESV (Newest Model)',
+        image: '/images/Cadillacedited-1024x556-1-e1751891079361.webp',
         pax: 6,
-        luggage: 5,
-        btnLayout: 'quote_only',
-        features: ['Cadillac Escalade ESV', '6 Passengers', '5 Large Suitcases + Extra Cargo', 'VIP Entertainment System'],
-      },
-      {
-        name: 'Stretch Limousine',
-        model: 'Lincoln Stretch / Chrysler 300 Stretch',
-        image: '/images/Limousine-Service-e1763051925488.webp',
-        pax: 10,
-        luggage: 2,
-        btnLayout: 'both',
-        features: ['8–10 Passengers Max', 'Bar & Mood Lighting', 'Bluetooth Sound System', 'Ideal for Events & Parties'],
-      },
-      {
-        name: 'Executive Van',
-        model: 'Mercedes Sprinter / Ford Transit',
-        image: '/images/Event-Transportation-e1763052056749.webp',
-        pax: 14,
         luggage: 6,
         btnLayout: 'both',
-        features: ['Up to 14 Passengers', 'Overhead Luggage Racks', 'USB Ports at Every Seat', 'Perfect for Group Shuttles'],
+        features: ['AKG Studio Audio', 'Rear Entertainment Screens', 'Panoramaroof & Heated Seats', 'VIP Executive Privacy Tint'],
       },
     ];
   }
@@ -81,74 +66,62 @@ export default async function FleetSection() {
       <div className="container">
         {/* Section header */}
         <header className="fleet-section__header">
-          <span className="eyebrow">The Fleet</span>
-          <h2 id="fleet-heading">Premium Vehicles for Every Journey</h2>
+          <span className="eyebrow">Our Executive Fleet</span>
+          <h2 id="fleet-heading">Late-Model Luxury Vehicles</h2>
           <p className="fleet-section__lead">
-            Every vehicle is late-model, meticulously maintained, and driven by a licensed professional chauffeur.
+            Every vehicle in our fleet is meticulously cleaned, sanitized before each ride, and operated by a vetted professional chauffeur.
           </p>
         </header>
 
-        {/* Vehicle cards */}
-        <div className="fleet-grid" role="list">
-          {fleet.map((v, idx) => (
-            <article key={idx} className="vehicle-card" role="listitem">
-              {/* Thumb */}
-              <div className="vehicle-card__thumb">
-                <div className="vehicle-card__ribbon" aria-hidden="true"></div>
-                <img src={v.image} alt={v.name} loading="lazy" />
-
-                {/* Capacity badges over image */}
-                <div className="vehicle-card__badges">
-                  <span className="vehicle-badge">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-                    </svg>
-                    {v.pax}
-                  </span>
-                  <span className="vehicle-badge">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-                      <path d="M17 6h-2V5a2 2 0 00-2-2h-2a2 2 0 00-2 2v1H7a2 2 0 00-2 2v11a2 2 0 002 2h10a2 2 0 002-2V8a2 2 0 00-2-2zm-6-1h2v1h-2V5zm1 13.5a.5.5 0 01-1 0V9a.5.5 0 011 0v9.5zm3 0a.5.5 0 01-1 0V9a.5.5 0 011 0v9.5zm-6 0a.5.5 0 01-1 0V9a.5.5 0 011 0v9.5z" />
-                    </svg>
-                    {v.luggage}
-                  </span>
-                </div>
+        {/* Fleet Grid */}
+        <div className="fleet-grid">
+          {fleet.map((vehicle, idx) => (
+            <article key={idx} className="fleet-card">
+              <div className="fleet-card__image-container">
+                <img
+                  src={vehicle.image}
+                  alt={vehicle.name}
+                  loading="lazy"
+                  className="fleet-card__image"
+                />
               </div>
 
-              {/* Body */}
-              <div className="vehicle-card__body">
-                <h3 className="vehicle-card__name">{v.name}</h3>
-                <p className="vehicle-card__model">{v.model}</p>
+              <div className="fleet-card__content">
+                <div className="fleet-card__header">
+                  <h3 className="fleet-card__title">{vehicle.name}</h3>
+                  <p className="fleet-card__subtitle">{vehicle.model}</p>
+                </div>
 
-                <ul className="vehicle-features" aria-label="Vehicle features">
-                  {v.features.map((f: string, fIdx: number) => (
-                    <li key={fIdx}>{f}</li>
+                {/* Specs */}
+                <div className="fleet-card__specs">
+                  <div className="fleet-spec">
+                    <span className="fleet-spec__icon" aria-hidden="true">👤</span>
+                    <span className="fleet-spec__text">{vehicle.pax} Passengers</span>
+                  </div>
+                  <div className="fleet-spec">
+                    <span className="fleet-spec__icon" aria-hidden="true">🧳</span>
+                    <span className="fleet-spec__text">{vehicle.luggage} Luggages</span>
+                  </div>
+                </div>
+
+                {/* Features list */}
+                <ul className="fleet-card__features">
+                  {vehicle.features.map((feat: string, fIdx: number) => (
+                    <li key={fIdx} className="fleet-card__feature-item">
+                      <span className="fleet-feature-check" aria-hidden="true">✓</span>
+                      <span>{feat}</span>
+                    </li>
                   ))}
                 </ul>
 
                 {/* Actions */}
-                <div className="vehicle-card__actions">
-                  {v.btnLayout === 'book_only' && (
-                    <Link href="/book" className="btn btn--gold">
-                      Book Now
-                    </Link>
-                  )}
-
-                  {v.btnLayout === 'quote_only' && (
-                    <Link href="/contact" className="btn btn--gold">
-                      Get a Quote
-                    </Link>
-                  )}
-
-                  {v.btnLayout === 'both' && (
-                    <>
-                      <Link href="/book" className="btn btn--gold">
-                        Book Now
-                      </Link>
-                      <a href="tel:16177840264" className="btn btn--ghost" aria-label="Call Now">
-                        Call Now
-                      </a>
-                    </>
-                  )}
+                <div className="fleet-card__actions">
+                  <Link
+                    href={`/book?vehicle=${vehicle.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    className="btn btn--gold btn--full"
+                  >
+                    Reserve Vehicle
+                  </Link>
                 </div>
               </div>
             </article>

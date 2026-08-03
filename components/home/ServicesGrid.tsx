@@ -2,6 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
 interface ServiceGridItem {
   id: string;
   title: string;
