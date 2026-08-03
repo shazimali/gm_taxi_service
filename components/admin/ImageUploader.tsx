@@ -21,6 +21,13 @@ export default function ImageUploader({
   const [localPreview, setLocalPreview] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Clear local blob preview when prop value updates to official server URL
+  useEffect(() => {
+    if (value && !value.startsWith('blob:')) {
+      setLocalPreview('');
+    }
+  }, [value]);
+
   // Clean up object URL when component unmounts or preview changes
   useEffect(() => {
     return () => {
@@ -95,7 +102,7 @@ export default function ImageUploader({
             height: '180px',
             borderRadius: '12px',
             overflow: 'hidden',
-            border: '1px solid #e2e8f0',
+            border: '1px solid #cbd5e1',
             backgroundColor: '#f8fafc',
           }}
         >
@@ -103,6 +110,10 @@ export default function ImageUploader({
             src={displayImage}
             alt="Uploaded preview"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={(e) => {
+              // Fallback if image fails to load
+              console.warn('Image failed to load:', displayImage);
+            }}
           />
 
           {uploading && (
@@ -110,7 +121,7 @@ export default function ImageUploader({
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
                 backdropFilter: 'blur(4px)',
                 display: 'flex',
                 alignItems: 'center',

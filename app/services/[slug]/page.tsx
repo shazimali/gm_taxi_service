@@ -2,8 +2,11 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CheckCircle2, ArrowRight, ShieldCheck, Phone } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Phone } from 'lucide-react';
 import { SERVICES_DATA } from '@/data/servicesData';
+import { prisma } from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
 
 export async function generateStaticParams() {
   return SERVICES_DATA.map((service) => ({
@@ -11,7 +14,19 @@ export async function generateStaticParams() {
   }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  try {
+    const dbService = await prisma.service.findUnique({
+      where: { slug: params.slug },
+    });
+    if (dbService) {
+      return {
+        title: `${dbService.name} | GM Limo Services Boston`,
+        description: dbService.tagline || dbService.description,
+      };
+    }
+  } catch {}
+
   const service = SERVICES_DATA.find((s) => s.slug === params.slug);
   if (!service) return { title: 'Service Not Found' };
   return {
@@ -20,11 +35,54 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   };
 }
 
-export default function SingleServicePage({ params }: { params: { slug: string } }) {
-  const service = SERVICES_DATA.find((s) => s.slug === params.slug);
+export default async function SingleServicePage({ params }: { params: { slug: string } }) {
+  let title = '';
+  let badge = 'Service';
+  let icon = '🚘';
+  let tagline = '';
+  let fullDesc = '';
+  let image = '';
+  let benefits: string[] = [];
+  let keyFeatures: string[] = [];
 
-  if (!service) {
-    notFound();
+  // 1. Try fetching from live MySQL database
+  try {
+    const dbService = await prisma.service.findUnique({
+      where: { slug: params.slug },
+    });
+
+    if (dbService) {
+      title = dbService.name;
+      tagline = dbService.tagline || '';
+      fullDesc = dbService.fullDetails || dbService.description || '';
+      image = dbService.image || '/images/Boston-Luxury-Chauffeur.webp';
+      badge = dbService.tagline || 'Service';
+      
+      if (typeof dbService.benefits === 'string' && dbService.benefits) {
+        try { benefits = JSON.parse(dbService.benefits); } catch { benefits = [dbService.benefits]; }
+      }
+      if (typeof dbService.features === 'string' && dbService.features) {
+        try { keyFeatures = JSON.parse(dbService.features); } catch { keyFeatures = [dbService.features]; }
+      }
+    }
+  } catch (err) {
+    console.error('Error loading service from DB:', err);
+  }
+
+  // 2. Fallback to static data if database record not found
+  if (!title) {
+    const staticService = SERVICES_DATA.find((s) => s.slug === params.slug);
+    if (!staticService) {
+      notFound();
+    }
+    title = staticService.title;
+    badge = staticService.badge;
+    icon = staticService.icon;
+    tagline = staticService.tagline;
+    fullDesc = staticService.fullDesc;
+    image = staticService.image;
+    benefits = staticService.benefits;
+    keyFeatures = staticService.keyFeatures;
   }
 
   return (
@@ -36,60 +94,66 @@ export default function SingleServicePage({ params }: { params: { slug: string }
           <span>/</span>
           <Link href="/services" className="hover:text-[#c5a059]">Services</Link>
           <span>/</span>
-          <span className="text-white font-medium">{service.title}</span>
+          <span className="text-white font-medium">{title}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left Column: Image & Details */}
           <div className="lg:col-span-7 flex flex-col gap-8">
             <div className="relative h-80 sm:h-96 w-full rounded-2xl overflow-hidden border border-white/10 glass-card shadow-2xl">
-              <Image
-                src={service.image}
-                alt={service.title}
-                fill
-                priority
-                className="object-cover"
+              <img
+                src={image}
+                alt={title}
+                className="w-full h-full object-cover"
               />
               <div className="absolute top-4 left-4 bg-neutral-950/80 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-bold text-[#c5a059] border border-white/10 flex items-center gap-1.5">
-                <span>{service.icon}</span>
-                <span>{service.badge}</span>
+                <span>{icon}</span>
+                <span>{badge}</span>
               </div>
             </div>
 
             <div className="glass-card rounded-2xl p-8 border border-white/10">
               <h1 className="font-serif text-3xl font-bold text-white mb-3">
-                {service.title}
+                {title}
               </h1>
               <p className="text-sm text-[#c5a059] font-medium mb-6">
-                {service.tagline}
+                {tagline}
               </p>
 
               <p className="text-neutral-300 text-sm leading-relaxed mb-8">
-                {service.fullDesc}
+                {fullDesc}
               </p>
 
-              <h3 className="font-serif text-xl font-bold text-white mb-4">
-                Service Privileges & Benefits
-              </h3>
-              <ul className="flex flex-col gap-3 mb-8">
-                {service.benefits.map((benefit, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-sm text-neutral-200">
-                    <CheckCircle2 className="w-4 h-4 text-[#c5a059] shrink-0 mt-0.5" />
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
+              {benefits.length > 0 && (
+                <>
+                  <h3 className="font-serif text-xl font-bold text-white mb-4">
+                    Service Privileges &amp; Benefits
+                  </h3>
+                  <ul className="flex flex-col gap-3 mb-8">
+                    {benefits.map((benefit, idx) => (
+                      <li key={idx} className="flex items-start gap-3 text-sm text-neutral-200">
+                        <CheckCircle2 className="w-4 h-4 text-[#c5a059] shrink-0 mt-0.5" />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
 
-              <h3 className="font-serif text-xl font-bold text-white mb-4">
-                Core Service Capabilities
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {service.keyFeatures.map((feature, idx) => (
-                  <div key={idx} className="p-3 rounded-xl bg-neutral-900 border border-white/5 text-xs text-neutral-300 font-medium">
-                    ⚡ {feature}
+              {keyFeatures.length > 0 && (
+                <>
+                  <h3 className="font-serif text-xl font-bold text-white mb-4">
+                    Core Service Capabilities
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {keyFeatures.map((feature, idx) => (
+                      <div key={idx} className="p-3 rounded-xl bg-neutral-900 border border-white/5 text-xs text-neutral-300 font-medium">
+                        ⚡ {feature}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -97,7 +161,7 @@ export default function SingleServicePage({ params }: { params: { slug: string }
           <div className="lg:col-span-5 flex flex-col gap-6 sticky top-28">
             <div className="glass-card rounded-2xl p-8 border border-white/10 shadow-2xl">
               <h3 className="font-serif text-xl font-bold text-white mb-2">
-                Reserve {service.badge}
+                Reserve {title}
               </h3>
               <p className="text-xs text-neutral-400 mb-6">
                 Lock in your guaranteed rate with 24/7 live dispatch support.
@@ -105,10 +169,10 @@ export default function SingleServicePage({ params }: { params: { slug: string }
 
               <div className="flex flex-col gap-3">
                 <Link
-                  href={`/book?service=${service.slug}`}
+                  href={`/book?service=${params.slug}`}
                   className="gold-btn-gradient text-neutral-950 font-bold text-center py-4 rounded-xl uppercase tracking-wider text-xs shadow-xl flex items-center justify-center gap-2 hover:scale-[1.01] transition-transform"
                 >
-                  <span>Book {service.title}</span>
+                  <span>Book {title}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
 
