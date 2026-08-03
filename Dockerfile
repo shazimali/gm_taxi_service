@@ -1,5 +1,5 @@
 # Stage 1: Base image
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 
 # Stage 2: Install dependencies
 FROM base AS deps
@@ -35,9 +35,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prisma & CLI Tools: copy full node_modules and prisma schema so CLI tools work offline
+# Prisma & CLI Tools: copy full node_modules, prisma schema, and lib so CLI tools work offline
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
 
 
 USER nextjs

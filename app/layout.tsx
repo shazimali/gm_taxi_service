@@ -17,6 +17,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://gmlimoservices.com'),
   title: 'GM Limo Services | Boston Executive Chauffeur & Airport Limousine',
   description: 'Premium executive chauffeur & airport limousine services in Boston, MA. 24/7 airport transfers for Logan BOS, TF Green PVD, Hanscom BED, corporate roadshows, and city-to-city private luxury travel.',
   keywords: [
@@ -82,7 +83,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <div id="page" className="site">
           <a className="skip-link screen-reader-text" href="#primary">
             Skip to content
