@@ -1,42 +1,54 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Users, Luggage, CheckCircle2, ArrowRight, Phone } from 'lucide-react';
+import { Users, Luggage, Check, ArrowRight, Phone, ShieldCheck, Clock, Sparkles } from 'lucide-react';
 import { FLEET_DATA } from '@/data/fleetData';
 import { prisma } from '@/lib/prisma';
 
+export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
 export async function generateStaticParams() {
-  return FLEET_DATA.map((vehicle) => ({
-    slug: vehicle.slug,
-  }));
+  const staticSlugs = FLEET_DATA.map((vehicle) => ({ slug: vehicle.slug }));
+  try {
+    const dbVehicles = await prisma.vehicle.findMany({ select: { slug: true } });
+    const dbSlugs = dbVehicles.map((v) => ({ slug: v.slug }));
+    const combined = [...staticSlugs, ...dbSlugs];
+    const uniqueSlugs = Array.from(new Set(combined.map((s) => s.slug)));
+    return uniqueSlugs.map((slug) => ({ slug }));
+  } catch {
+    return staticSlugs;
+  }
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata({ params }: { params: { slug: string } | Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
   try {
     const dbVehicle = await prisma.vehicle.findUnique({
-      where: { slug: params.slug },
+      where: { slug: resolvedParams.slug },
     });
     if (dbVehicle) {
       return {
-        title: `${dbVehicle.name} | Executive Fleet Boston`,
+        title: `${dbVehicle.name} | Executive Fleet Boston | GM Limo Services`,
         description: dbVehicle.description,
       };
     }
   } catch {}
 
-  const vehicle = FLEET_DATA.find((v) => v.slug === params.slug);
+  const vehicle = FLEET_DATA.find((v) => v.slug === resolvedParams.slug);
   if (!vehicle) return { title: 'Vehicle Not Found' };
   return {
-    title: `${vehicle.name} | Executive Fleet Boston`,
+    title: `${vehicle.name} | Executive Fleet Boston | GM Limo Services`,
     description: vehicle.tagline,
   };
 }
 
-export default async function SingleFleetPage({ params }: { params: { slug: string } }) {
+export default async function SingleFleetPage({ params }: { params: { slug: string } | Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
+  const currentSlug = resolvedParams.slug;
+
   let name = '';
-  let category = 'Executive';
+  let category = 'Executive Fleet';
   let model = '';
   let image = '';
   let description = '';
@@ -48,12 +60,12 @@ export default async function SingleFleetPage({ params }: { params: { slug: stri
   // 1. Try fetching from live MySQL database
   try {
     const dbVehicle = await prisma.vehicle.findUnique({
-      where: { slug: params.slug },
+      where: { slug: currentSlug },
     });
 
     if (dbVehicle) {
       name = dbVehicle.name;
-      category = dbVehicle.category || 'Executive';
+      category = dbVehicle.category || 'Executive Fleet';
       model = dbVehicle.model || dbVehicle.name;
       image = dbVehicle.image || '/images/Businessedited-1024x526-1-e1751891182287.webp';
       description = dbVehicle.description || '';
@@ -62,7 +74,13 @@ export default async function SingleFleetPage({ params }: { params: { slug: stri
       rateHourly = dbVehicle.rateHourly;
 
       if (typeof dbVehicle.features === 'string' && dbVehicle.features) {
-        try { features = JSON.parse(dbVehicle.features); } catch { features = [dbVehicle.features]; }
+        try {
+          features = JSON.parse(dbVehicle.features);
+        } catch {
+          features = [dbVehicle.features];
+        }
+      } else if (Array.isArray(dbVehicle.features)) {
+        features = dbVehicle.features;
       }
     }
   } catch (err) {
@@ -71,7 +89,7 @@ export default async function SingleFleetPage({ params }: { params: { slug: stri
 
   // 2. Fallback to static data if database record not found
   if (!name) {
-    const staticVehicle = FLEET_DATA.find((v) => v.slug === params.slug);
+    const staticVehicle = FLEET_DATA.find((v) => v.slug === currentSlug);
     if (!staticVehicle) {
       notFound();
     }
@@ -86,112 +104,318 @@ export default async function SingleFleetPage({ params }: { params: { slug: stri
     features = staticVehicle.features;
   }
 
-  return (
-    <div className="pt-28 pb-20 bg-neutral-950 text-neutral-100">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs text-neutral-400 mb-8">
-          <Link href="/" className="hover:text-[#c5a059]">Home</Link>
-          <span>/</span>
-          <Link href="/fleet" className="hover:text-[#c5a059]">Fleet</Link>
-          <span>/</span>
-          <span className="text-white font-medium">{name}</span>
-        </div>
+  const defaultAmenities = [
+    'Leather Seating',
+    'High-Speed Wi-Fi',
+    'Complimentary Water',
+    'Device Chargers',
+    'Sanitized Interiors',
+    'Child Seat Available Upon Request',
+  ];
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          {/* Left Column: Vehicle Image & Specs */}
-          <div className="lg:col-span-7 flex flex-col gap-8">
-            <div className="relative h-80 sm:h-96 w-full rounded-2xl overflow-hidden border border-white/10 glass-card shadow-2xl">
-              <img
-                src={image}
-                alt={name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-4 left-4 bg-neutral-950/80 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-bold text-[#c5a059] border border-white/10">
-                {category}
+  return (
+    <div style={{ backgroundColor: '#f9f9f9', color: '#2d2d2d', minHeight: '100vh', paddingTop: '120px', paddingBottom: '80px' }}>
+      <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.25rem' }}>
+        
+        {/* Breadcrumb Navigation */}
+        <nav aria-label="Breadcrumb" style={{ marginBottom: '1.5rem' }}>
+          <ol style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#6b6b6b', listStyle: 'none', padding: 0 }}>
+            <li>
+              <Link href="/" style={{ color: '#6b6b6b', textDecoration: 'none' }}>Home</Link>
+            </li>
+            <li>/</li>
+            <li>
+              <Link href="/fleet" style={{ color: '#6b6b6b', textDecoration: 'none' }}>Fleet</Link>
+            </li>
+            <li>/</li>
+            <li style={{ color: '#bfa054', fontWeight: 700 }}>{name}</li>
+          </ol>
+        </nav>
+
+        {/* Page Header Banner */}
+        <header style={{ marginBottom: '2.5rem' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#bfa054', display: 'block', marginBottom: '0.4rem' }}>
+            {category} Specifications
+          </span>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', fontWeight: 800, color: '#111111', margin: 0, lineHeight: 1.2 }}>
+            {name}
+          </h1>
+          <p style={{ color: '#666666', fontSize: '1rem', marginTop: '0.4rem' }}>
+            {model}
+          </p>
+        </header>
+
+        {/* Main 2-Column Content Layout */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2.5rem' }} className="fleet-detail-grid">
+          <style>{`
+            @media (min-width: 992px) {
+              .fleet-detail-grid {
+                grid-template-columns: 7fr 5fr !important;
+              }
+            }
+          `}</style>
+
+          {/* Left Column: Vehicle Image & Detailed Specifications */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            
+            {/* Vehicle Main Showcase Image Card */}
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                borderRadius: '16px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e5e5',
+                overflow: 'hidden',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.06)',
+              }}
+            >
+              {/* Metallic Gold Ribbon Accent */}
+              <div style={{ height: '4px', background: 'linear-gradient(to right, #bfa054, #f5e4ab, #bfa054)' }} />
+
+              <div style={{ position: 'relative', width: '100%', height: '380px', backgroundColor: '#ffffff', padding: '1rem' }}>
+                <img
+                  src={image}
+                  alt={name}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    backgroundColor: 'rgba(17, 17, 17, 0.9)',
+                    color: '#bfa054',
+                    border: '1px solid rgba(191, 160, 84, 0.4)',
+                    padding: '0.4rem 0.9rem',
+                    borderRadius: '999px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {category}
+                </span>
               </div>
             </div>
 
-            {/* Vehicle Overview */}
-            <div className="glass-card rounded-2xl p-8 border border-white/10">
-              <h3 className="font-serif text-2xl font-bold text-white mb-4">
-                Vehicle Overview
-              </h3>
-              <p className="text-neutral-300 text-sm leading-relaxed mb-6">
-                {description}
-              </p>
+            {/* Capacity & Rate Specs Highlight Bar */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: '1rem',
+                backgroundColor: '#ffffff',
+                padding: '1.25rem',
+                borderRadius: '14px',
+                border: '1px solid #e5e5e5',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0.5rem' }}>
+                <Users size={22} color="#bfa054" style={{ marginBottom: '0.3rem' }} />
+                <span style={{ fontSize: '0.75rem', color: '#666666', fontWeight: 600 }}>Passengers</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#111111' }}>Up to {passengerCapacity}</span>
+              </div>
 
-              {features.length > 0 && (
-                <>
-                  <h4 className="font-serif text-lg font-bold text-white mb-3">
-                    Key Performance &amp; Interior Features
-                  </h4>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                    {features.map((feat, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-xs text-neutral-300">
-                        <CheckCircle2 className="w-4 h-4 text-[#c5a059] shrink-0" />
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column: Pricing & Quick Booking Widget */}
-          <div className="lg:col-span-5 flex flex-col gap-6 sticky top-28">
-            <div className="glass-card rounded-2xl p-8 border border-white/10 shadow-2xl">
-              <span className="text-[10px] uppercase tracking-widest font-extrabold text-[#c5a059] block mb-1">
-                {category} Specifications
-              </span>
-              <h1 className="font-serif text-3xl font-bold text-white mb-2">
-                {name}
-              </h1>
-              <p className="text-xs text-neutral-400 mb-6">{model}</p>
-
-              <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-neutral-900 border border-white/5 mb-6 text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <Users className="w-5 h-5 text-[#c5a059]" />
-                  <span className="text-xs text-neutral-400">Capacity</span>
-                  <span className="text-sm font-bold text-white">{passengerCapacity} Passengers</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <Luggage className="w-5 h-5 text-[#c5a059]" />
-                  <span className="text-xs text-neutral-400">Luggage</span>
-                  <span className="text-sm font-bold text-white">{luggageCapacity} Suitcases</span>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0.5rem', borderLeft: '1px solid #f0f0f0' }}>
+                <Luggage size={22} color="#bfa054" style={{ marginBottom: '0.3rem' }} />
+                <span style={{ fontSize: '0.75rem', color: '#666666', fontWeight: 600 }}>Luggage</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#111111' }}>{luggageCapacity} Suitcases</span>
               </div>
 
               {rateHourly && (
-                <div className="mb-6 p-4 rounded-xl bg-neutral-900/60 border border-[#c5a059]/30 flex items-center justify-between">
-                  <span className="text-xs text-neutral-400 font-medium">Starting Hourly Rate</span>
-                  <span className="text-2xl font-serif font-bold text-[#c5a059]">
-                    ${rateHourly}<span className="text-xs text-neutral-400 font-normal">/hr</span>
-                  </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0.5rem', borderLeft: '1px solid #f0f0f0' }}>
+                  <Sparkles size={22} color="#bfa054" style={{ marginBottom: '0.3rem' }} />
+                  <span style={{ fontSize: '0.75rem', color: '#666666', fontWeight: 600 }}>Hourly Rate</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 800, color: '#bfa054' }}>${rateHourly}<small style={{ fontSize: '0.7rem', color: '#666666' }}>/hr</small></span>
                 </div>
               )}
 
-              <div className="flex flex-col gap-3">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0.5rem', borderLeft: '1px solid #f0f0f0' }}>
+                <Clock size={22} color="#bfa054" style={{ marginBottom: '0.3rem' }} />
+                <span style={{ fontSize: '0.75rem', color: '#666666', fontWeight: 600 }}>Availability</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#111111' }}>24/7 On-Demand</span>
+              </div>
+            </div>
+
+            {/* Vehicle Overview Section */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '2rem',
+                borderRadius: '16px',
+                border: '1px solid #e5e5e5',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.03)',
+              }}
+            >
+              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 700, color: '#111111', marginBottom: '1rem' }}>
+                Vehicle Overview
+              </h2>
+              <p style={{ fontSize: '0.95rem', color: '#444444', lineHeight: 1.7, marginBottom: '2rem' }}>
+                {description || `Experience unparalleled luxury with our ${name}. Meticulously maintained and operated by uniformed executive chauffeurs, this vehicle guarantees discreet, punctual, and stress-free travel across Boston, Logan Airport, and regional destinations.`}
+              </p>
+
+              {/* Key Features List */}
+              {features.length > 0 && (
+                <>
+                  <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 700, color: '#111111', marginBottom: '1rem' }}>
+                    Key Performance &amp; Interior Features
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem', marginBottom: '2rem' }}>
+                    {features.map((feat, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.6rem',
+                          padding: '0.75rem 1rem',
+                          backgroundColor: '#f9f9f9',
+                          borderRadius: '10px',
+                          border: '1px solid #eee',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          color: '#222222',
+                        }}
+                      >
+                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#bfa054', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
+                          <Check size={12} strokeWidth={3} />
+                        </div>
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Amenities Badges */}
+              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 700, color: '#111111', marginBottom: '0.85rem' }}>
+                Included Executive Amenities
+              </h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {defaultAmenities.map((amenity, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '999px',
+                      backgroundColor: 'rgba(191, 160, 84, 0.1)',
+                      color: '#a6853a',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      border: '1px solid rgba(191, 160, 84, 0.25)',
+                    }}
+                  >
+                    ✓ {amenity}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column: Sticky Reservation Card */}
+          <div style={{ position: 'sticky', top: '120px' }}>
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                padding: '2rem',
+                borderRadius: '16px',
+                border: '1px solid #e5e5e5',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
+              }}
+            >
+              <div style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: '1.25rem', marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#bfa054' }}>
+                  Guaranteed Reservation
+                </span>
+                <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 700, color: '#111111', marginTop: '0.25rem' }}>
+                  Reserve {name}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#666666', marginTop: '0.35rem' }}>
+                  Flat-rate pricing, 24/7 live dispatch support, and real-time flight tracking.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <Link
-                  href={`/book?vehicle=${params.slug}`}
-                  className="gold-btn-gradient text-neutral-950 font-bold text-center py-4 rounded-xl uppercase tracking-wider text-xs shadow-xl flex items-center justify-center gap-2 hover:scale-[1.01] transition-transform"
+                  href={`/book?vehicle=${currentSlug}`}
+                  className="btn btn--gold"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.6rem',
+                    padding: '1rem 1.5rem',
+                    borderRadius: '999px',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    textDecoration: 'none',
+                    boxShadow: '0 6px 20px rgba(191, 160, 84, 0.3)',
+                  }}
                 >
                   <span>Book {name} Now</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight size={18} />
                 </Link>
 
                 <a
                   href="tel:16177840264"
-                  className="py-3.5 rounded-xl border border-white/20 hover:border-[#c5a059] text-white font-bold text-xs text-center flex items-center justify-center gap-2 transition-colors"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.6rem',
+                    padding: '0.9rem 1.5rem',
+                    borderRadius: '999px',
+                    backgroundColor: '#ffffff',
+                    color: '#111111',
+                    border: '1.5px solid #bfa054',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s ease',
+                  }}
                 >
-                  <Phone className="w-4 h-4 text-[#c5a059]" />
-                  <span>Call (617) 784-0264 for Quote</span>
+                  <Phone size={16} color="#bfa054" />
+                  <span>Call (617) 784-0264</span>
                 </a>
               </div>
+
+              {/* Service Guarantee Badges */}
+              <div
+                style={{
+                  marginTop: '1.75rem',
+                  paddingTop: '1.25rem',
+                  borderTop: '1px solid #f0f0f0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', color: '#444444', fontWeight: 500 }}>
+                  <ShieldCheck size={18} color="#bfa054" style={{ flexShrink: 0 }} />
+                  <span>Vetted &amp; Uniformed Professional Chauffeurs</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', color: '#444444', fontWeight: 500 }}>
+                  <Clock size={18} color="#bfa054" style={{ flexShrink: 0 }} />
+                  <span>Complimentary Wait Time Included</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', color: '#444444', fontWeight: 500 }}>
+                  <Sparkles size={18} color="#bfa054" style={{ flexShrink: 0 }} />
+                  <span>Sanitized &amp; Cleaned Before Every Trip</span>
+                </div>
+              </div>
+
             </div>
           </div>
+
         </div>
+
       </div>
     </div>
   );
