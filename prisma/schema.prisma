@@ -79,18 +79,34 @@ model Airport {
 }
 
 model Passenger {
-  id               String    @id @default(uuid())
+  id               String          @id @default(uuid())
   fullName         String
-  email            String    @unique
+  email            String          @unique
   passwordHash     String
   phone            String?
-  stripeCustomerId String?   @unique
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  stripeCustomerId String?         @unique
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   bookings         Booking[]
+  savedCards       PassengerCard[]
 
   @@map("passengers")
+}
+
+model PassengerCard {
+  id                    String    @id @default(uuid())
+  passengerId           String
+  passenger             Passenger @relation(fields: [passengerId], references: [id], onDelete: Cascade)
+  stripePaymentMethodId String    @unique
+  brand                 String    @default("card")
+  last4                 String
+  expMonth              Int
+  expYear               Int
+  isDefault             Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+
+  @@map("passenger_cards")
 }
 
 model Booking {

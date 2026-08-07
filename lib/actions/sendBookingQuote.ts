@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { enqueueEmail } from '@/lib/queue/emailQueue';
 
 export interface BookingState {
   success?: boolean;
@@ -65,6 +66,26 @@ export async function sendBookingQuote(prevState: BookingState, formData: FormDa
         stripePaymentIntentId: stripePaymentIntentId,
         paymentStatus: paymentStatus,
         estimatedPrice: estimatedPrice,
+      },
+    });
+
+    // Enqueue Ride Confirmation Email Job to BullMQ Redis Queue
+    await enqueueEmail('BOOKING_CONFIRMATION_EMAIL', {
+      booking: {
+        confirmationNumber,
+        fullName,
+        email: email.toLowerCase(),
+        phone,
+        serviceType,
+        vehicleSlug,
+        pickupLocation,
+        dropoffLocation,
+        pickupDate,
+        pickupTime,
+        passengers,
+        luggage,
+        flightNumber,
+        estimatedPrice,
       },
     });
 

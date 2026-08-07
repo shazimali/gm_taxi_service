@@ -76,10 +76,9 @@ export default function Header() {
         <div className="site-branding">
           <Link href="/" className="custom-logo-link" rel="home">
             <img
-              src="/images/gm-logo-1-1.png"
+              src="/images/logo.png"
               alt="GM Limo Services"
               className="custom-logo"
-              style={{ maxHeight: '55px', width: 'auto', display: 'block' }}
             />
           </Link>
         </div>

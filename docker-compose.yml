@@ -11,6 +11,8 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=${REDIS_HOST:-everyday_redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
     networks:
       - global_network
     volumes:

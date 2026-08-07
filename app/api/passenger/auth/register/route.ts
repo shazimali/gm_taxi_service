@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { prisma as globalPrisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { signPassengerToken } from '@/lib/passengerAuth';
+import { enqueueEmail } from '@/lib/queue/emailQueue';
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +32,8 @@ export async function POST(req: Request) {
 
     // Create Stripe Customer in Vault if valid key configured
     let stripeCustomerId: string | null = null;
-    if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.startsWith('sk_')) {
+    const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
+    if (stripeKey && stripeKey.startsWith('sk_')) {
       try {
         const customer = await stripe.customers.create({
           email: cleanEmail,
@@ -52,6 +54,12 @@ export async function POST(req: Request) {
         phone: phone || null,
         stripeCustomerId: stripeCustomerId || null,
       },
+    });
+
+    // Enqueue Welcome Email Job to BullMQ Redis Queue
+    await enqueueEmail('WELCOME_EMAIL', {
+      passengerName: passenger.fullName,
+      email: passenger.email,
     });
 
     const token = signPassengerToken({

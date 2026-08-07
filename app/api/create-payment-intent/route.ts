@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { amount, vehicleSlug, pickupLocation, dropoffLocation } = body;
+    const { amount, vehicleSlug, pickupLocation, dropoffLocation, paymentMethodId } = body;
 
     if (!amount || Number(amount) <= 0) {
       return NextResponse.json({ error: 'Valid trip amount is required.' }, { status: 400 });
@@ -26,6 +26,7 @@ export async function POST(req: Request) {
         pickupLocation: pickupLocation || '',
         dropoffLocation: dropoffLocation || '',
         passengerId: passenger?.id || 'guest',
+        passengerEmail: passenger?.email || '',
       },
     };
 
@@ -33,14 +34,24 @@ export async function POST(req: Request) {
       paymentIntentOptions.customer = passenger.stripeCustomerId;
     }
 
+    if (paymentMethodId && passenger?.stripeCustomerId) {
+      paymentIntentOptions.payment_method = paymentMethodId;
+      paymentIntentOptions.confirm = true;
+      paymentIntentOptions.off_session = true;
+    }
+
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      status: paymentIntent.status,
     });
   } catch (error: any) {
     console.error('PaymentIntent Creation Error:', error);
-    return NextResponse.json({ error: 'Failed to create payment hold authorization.' }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || 'Failed to create payment hold authorization.' },
+      { status: 500 }
+    );
   }
 }
