@@ -76,7 +76,7 @@ export default function Header() {
         <div className="site-branding">
           <Link href="/" className="custom-logo-link" rel="home">
             <img
-              src="/images/logo.png"
+              src="/images/logo.jpeg"
               alt="GM Limo Services"
               className="custom-logo"
             />
