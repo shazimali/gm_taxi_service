@@ -3,9 +3,25 @@ import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { prisma as globalPrisma } from '@/lib/prisma';
 import { signPassengerToken } from '@/lib/passengerAuth';
+import { rateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const limitResult = rateLimit(`passenger_login_${ip}`, 5, 60 * 1000);
+
+    if (!limitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again in a minute.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+          },
+        }
+      );
+    }
+
     const body = await req.json();
     const { email, password } = body;
 
@@ -31,10 +47,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
     }
 
-    const token = signPassengerToken({
+    const token = await signPassengerToken({
       passengerId: passenger.id,
       email: passenger.email,
       fullName: passenger.fullName,
+      tokenVersion: passenger.tokenVersion || 1,
     });
 
     const response = NextResponse.json({

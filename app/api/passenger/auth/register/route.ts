@@ -62,10 +62,11 @@ export async function POST(req: Request) {
       email: passenger.email,
     });
 
-    const token = signPassengerToken({
+    const token = await signPassengerToken({
       passengerId: passenger.id,
       email: passenger.email,
       fullName: passenger.fullName,
+      tokenVersion: passenger.tokenVersion || 1,
     });
 
     const response = NextResponse.json({

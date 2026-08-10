@@ -1,23 +1,35 @@
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { PrismaClient } from '@prisma/client';
 import { prisma as globalPrisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-jwt-key-gm-limo-2026';
+function getJwtSecretKey() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not defined.');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export interface PassengerPayload {
   passengerId: string;
   email: string;
   fullName: string;
+  tokenVersion?: number;
 }
 
-export function signPassengerToken(payload: PassengerPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+export async function signPassengerToken(payload: PassengerPayload): Promise<string> {
+  return await new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(getJwtSecretKey());
 }
 
-export function verifyPassengerToken(token: string): PassengerPayload | null {
+export async function verifyPassengerToken(token: string): Promise<PassengerPayload | null> {
   try {
-    return jwt.verify(token, JWT_SECRET) as PassengerPayload;
+    const verified = await jwtVerify(token, getJwtSecretKey());
+    return verified.payload as unknown as PassengerPayload;
   } catch {
     return null;
   }
@@ -29,7 +41,7 @@ export async function getCurrentPassenger() {
 
   if (!token) return null;
 
-  const payload = verifyPassengerToken(token);
+  const payload = await verifyPassengerToken(token);
   if (!payload?.passengerId) return null;
 
   try {
@@ -37,8 +49,30 @@ export async function getCurrentPassenger() {
     const passenger = await prisma.passenger.findUnique({
       where: { id: payload.passengerId },
     });
+
+    if (!passenger) return null;
+
+    if (payload.tokenVersion !== undefined && passenger.tokenVersion !== payload.tokenVersion) {
+      return null;
+    }
+
     return passenger;
   } catch {
     return null;
   }
 }
+
+export async function revokePassengerSessions(passengerId: string): Promise<boolean> {
+  try {
+    const prisma = (globalPrisma as any)?.passenger ? globalPrisma : new PrismaClient();
+    await prisma.passenger.update({
+      where: { id: passengerId },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
