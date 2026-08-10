@@ -1,10 +1,10 @@
-import React from 'react';
 import { getAuthenticatedAdmin } from '@/lib/auth';
+import { Bell, Moon, Search } from 'lucide-react';
+import Link from 'next/link';
+import React from 'react';
+import './admin.css';
 import AdminNav from './AdminNav';
 import LogoutButton from './LogoutButton';
-import Link from 'next/link';
-import { Search, Bell, Moon } from 'lucide-react';
-import './admin.css';
 
 export default async function AdminLayout({
   children,
@@ -32,7 +32,7 @@ export default async function AdminLayout({
         <div className="admin-sidebar__header">
           <Link href="/admin" style={{ textDecoration: 'none' }}>
             <img
-              src="/images/gm-logo-1-1.png"
+              src="/images/logo.png"
               alt="GM Limo"
               className="admin-sidebar__logo"
             />
