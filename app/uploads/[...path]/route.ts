@@ -1,35 +1,43 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  req: Request,
+  { params }: { params: { path: string[] } | Promise<{ path: string[] }> }
 ) {
   try {
     const resolvedParams = await params;
-    const relativePath = resolvedParams.path.join('/');
-    const filePath = path.join(process.cwd(), 'public', 'uploads', relativePath);
+    const filePathParts = resolvedParams.path || [];
 
-    const buffer = await readFile(filePath);
-    const ext = path.extname(filePath).toLowerCase();
+    // Base directory for dynamic user uploads
+    const uploadsBaseDir = path.join(process.cwd(), 'public', 'uploads');
+    const safeFilePath = path.join(uploadsBaseDir, ...filePathParts);
+
+    // Prevent directory traversal attacks
+    if (!safeFilePath.startsWith(uploadsBaseDir)) {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+
+    const fileBuffer = await readFile(safeFilePath);
+    const ext = path.extname(safeFilePath).toLowerCase();
 
     let contentType = 'image/jpeg';
     if (ext === '.png') contentType = 'image/png';
-    else if (ext === '.webp') contentType = 'image/webp';
-    else if (ext === '.gif') contentType = 'image/gif';
-    else if (ext === '.svg') contentType = 'image/svg+xml';
+    if (ext === '.webp') contentType = 'image/webp';
+    if (ext === '.gif') contentType = 'image/gif';
+    if (ext === '.svg') contentType = 'image/svg+xml';
+    if (ext === '.avif') contentType = 'image/avif';
 
-    return new NextResponse(buffer, {
+    return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch (err) {
-    console.error('File serving error:', err);
-    return new NextResponse('File not found', { status: 404 });
+    return new NextResponse('Image Not Found', { status: 404 });
   }
 }

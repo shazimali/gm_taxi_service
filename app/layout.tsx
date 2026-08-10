@@ -56,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en-US" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="en-US" data-scroll-behavior="smooth" className={`${inter.variable} ${playfair.variable}`}>
       <head>
         <script
           type="application/ld+json"
