@@ -1,11 +1,12 @@
 import React from 'react';
 import { prisma } from '@/lib/prisma';
 import FleetSlider from './FleetSlider';
+import FleetGrid from './FleetGrid';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
-export default async function FleetSection() {
+export default async function FleetSection({ isSlider = true }: { isSlider?: boolean }) {
   let fleet: any[] = [];
 
   try {
@@ -91,8 +92,7 @@ export default async function FleetSection() {
           </p>
         </header>
 
-        {/* 3-Product Slider with Right-to-Left controls */}
-        <FleetSlider fleet={fleet} />
+        {isSlider ? <FleetSlider fleet={fleet} /> : <FleetGrid fleet={fleet} />}
       </div>
     </section>
   );

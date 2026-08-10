@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRef, useState } from 'react';
 
 interface VehicleItem {
   name: string;

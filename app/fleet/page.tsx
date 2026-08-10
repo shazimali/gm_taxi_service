@@ -1,4 +1,3 @@
-import React from 'react';
 import FleetSection from '@/components/home/FleetSection';
 
 export const metadata = {
@@ -9,7 +8,7 @@ export const metadata = {
 export default function FleetPage() {
   return (
     <div className="pt-20">
-      <FleetSection />
+      <FleetSection isSlider={false} />
     </div>
   );
 }

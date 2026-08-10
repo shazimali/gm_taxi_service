@@ -490,9 +490,9 @@ p {
   padding-left: 1.55rem;
 }
 
-.nav-menu .sub-menu .current-menu-item > a,
-.nav-menu .sub-menu .current_page_item > a,
-.nav-menu .sub-menu .current-menu-ancestor > a {
+.nav-menu .sub-menu .current-menu-item>a,
+.nav-menu .sub-menu .current_page_item>a,
+.nav-menu .sub-menu .current-menu-ancestor>a {
   color: var(--clr-gold) !important;
 }
 
@@ -1186,6 +1186,24 @@ p {
   padding-bottom: 0.5rem;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+}
+
+.fleet-grid-full {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 2rem;
+}
+
+@media (min-width: 640px) {
+  .fleet-grid-full {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .fleet-grid-full {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .fleet-grid::-webkit-scrollbar {
@@ -3232,6 +3250,7 @@ p {
 .about-editor-content__layout p {
   margin-bottom: 1.5rem;
 }
+
 /* =============================================================================
    CONTACT PAGE STYLES
    ============================================================================= */
