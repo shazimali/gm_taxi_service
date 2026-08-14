@@ -399,12 +399,6 @@ p {
   margin-inline-start: auto;
 }
 
-@media (min-width: 900px) {
-  .main-navigation {
-    margin-inline-start: 100px;
-  }
-}
-
 .nav-menu {
   display: none;
   /* hidden on mobile — shown via toggle */
@@ -3527,4 +3521,213 @@ a.contact-info-item:hover {
   background-color: #fef2f2;
   border: 1px solid #fca5a5;
   color: #991b1b;
+}
+
+/* =============================================================================
+   LOCATIONS PAGE
+   ============================================================================= */
+
+/* ── Hero Banner ──────────────────────────────── */
+.locations-hero {
+  position: relative;
+  min-height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 5rem 1.5rem 4rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background-size: cover;
+  background-position: center;
+}
+
+.locations-hero__inner {
+  max-width: 820px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.locations-hero__title {
+  font-family: var(--ff-head);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+}
+
+.locations-hero__subtitle {
+  font-size: clamp(0.95rem, 2vw, 1.2rem);
+  color: rgba(255, 255, 255, 0.82);
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* ── Intro Section ────────────────────────────── */
+.locations-intro {
+  background: #ffffff;
+  padding: 4rem 1.5rem;
+}
+
+.locations-intro__inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.locations-intro__heading {
+  font-family: var(--ff-head);
+  font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  color: var(--clr-text);
+  margin: 0 0 0.85rem;
+}
+
+.locations-intro__body {
+  font-size: 1rem;
+  color: var(--clr-text-muted);
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* ── Grid Section ─────────────────────────────── */
+.locations-grid-section {
+  background: var(--clr-bg-alt);
+  padding: 4rem 1.5rem 5rem;
+}
+
+.locations-grid-section__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.locations-grid-section__title {
+  font-family: var(--ff-head);
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  font-weight: 700;
+  color: var(--clr-text);
+  text-align: center;
+  margin: 0 0 0.5rem;
+}
+
+.locations-grid-section__underline {
+  width: 80px;
+  height: 3px;
+  background: var(--clr-accent);
+  margin: 0 auto 2.5rem;
+  border-radius: 2px;
+}
+
+/* Grid: 5 cols → 4 → 3 → 2 → 1 */
+.locations-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+  .locations-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .locations-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .locations-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 380px) {
+  .locations-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Location Card ────────────────────────────── */
+.locations-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #ffffff;
+  border: 1px solid var(--clr-border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: default;
+}
+
+.locations-card:hover {
+  border-color: var(--clr-accent);
+  box-shadow: 0 4px 16px rgba(191, 160, 84, 0.15);
+  transform: translateY(-2px);
+}
+
+.locations-card__pin {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+  filter: hue-rotate(0deg);
+  /* gold-tinted map pin emoji */
+}
+
+.locations-card__name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--clr-text);
+  line-height: 1.4;
+}
+
+/* ── CTA Strip ────────────────────────────────── */
+.locations-cta {
+  background: linear-gradient(135deg, #0f172a 0%, #1a2744 100%);
+  padding: 4rem 1.5rem;
+  text-align: center;
+}
+
+.locations-cta__inner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.locations-cta__title {
+  font-family: var(--ff-head);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.75rem;
+}
+
+.locations-cta__sub {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0 0 2rem;
+  line-height: 1.7;
+}
+
+.locations-cta__btn {
+  display: inline-block;
+  background: var(--clr-accent);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.9rem 2.5rem;
+  border-radius: 6px;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.locations-cta__btn:hover {
+  background: var(--clr-accent-dark);
+  transform: translateY(-2px);
 }

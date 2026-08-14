@@ -121,10 +121,16 @@ export default function Header() {
               </Link>
             </li>
             <li className="menu-item">
+              <Link href="/locations" className={isActive('/locations') ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
+                Locations
+              </Link>
+            </li>
+            <li className="menu-item">
               <Link href="/contact" className={isActive('/contact') ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
                 Contact Us
               </Link>
             </li>
+
 
 
 

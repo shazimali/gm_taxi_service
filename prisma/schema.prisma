@@ -143,15 +143,32 @@ model Booking {
 }
 
 model SiteSetting {
-  id             String   @id @default("default")
-  phoneDisplay   String   @default("(617) 784-0264")
-  phoneTel       String   @default("16177840264")
-  dispatchEmail  String   @default("info@bostonluxurychauffeur.com")
-  serviceAddress String   @default("Boston, Massachusetts, USA")
-  heroTitleGold  String   @default("Boston Luxury Chauffeur")
-  heroTitleMain  String   @default("— Logan Airport Car Service")
-  heroSubtitle   String   @default("Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers")
-  updatedAt      DateTime @updatedAt
+  id                    String   @id @default("default")
+  phoneDisplay          String   @default("(617) 784-0264")
+  phoneTel              String   @default("16177840264")
+  dispatchEmail         String   @default("info@bostonluxurychauffeur.com")
+  serviceAddress        String   @default("Boston, Massachusetts, USA")
+  heroTitleGold         String   @default("Boston Luxury Chauffeur")
+  heroTitleMain         String   @default("— Logan Airport Car Service")
+  heroSubtitle          String   @default("Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers")
+  // Locations page hero
+  locationsHeroTitle    String   @default("Our Service Locations")
+  locationsHeroSubtitle String   @default("Luxury Executive Transport Across the Greater Area")
+  locationsHeroImage    String?  // stored path e.g. /uploads/...
+  updatedAt             DateTime @updatedAt
 
   @@map("site_settings")
+}
+
+model Location {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  description  String?  @db.Text
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("locations")
 }

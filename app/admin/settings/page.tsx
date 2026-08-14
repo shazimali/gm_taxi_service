@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 interface SiteSettings {
   phoneDisplay: string;
@@ -10,6 +10,9 @@ interface SiteSettings {
   heroTitleGold: string;
   heroTitleMain: string;
   heroSubtitle: string;
+  locationsHeroTitle: string;
+  locationsHeroSubtitle: string;
+  locationsHeroImage: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -20,6 +23,9 @@ const DEFAULTS: SiteSettings = {
   heroTitleGold: 'Boston Luxury Chauffeur',
   heroTitleMain: '— Logan Airport Car Service',
   heroSubtitle: 'Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers',
+  locationsHeroTitle: 'Our Service Locations',
+  locationsHeroSubtitle: 'Luxury Executive Transport Across the Greater Area',
+  locationsHeroImage: '',
 };
 
 export default function SiteSettingsPage() {
@@ -28,6 +34,8 @@ export default function SiteSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -43,6 +51,9 @@ export default function SiteSettingsPage() {
           heroTitleGold: s.heroTitleGold ?? DEFAULTS.heroTitleGold,
           heroTitleMain: s.heroTitleMain ?? DEFAULTS.heroTitleMain,
           heroSubtitle: s.heroSubtitle ?? DEFAULTS.heroSubtitle,
+          locationsHeroTitle: s.locationsHeroTitle ?? DEFAULTS.locationsHeroTitle,
+          locationsHeroSubtitle: s.locationsHeroSubtitle ?? DEFAULTS.locationsHeroSubtitle,
+          locationsHeroImage: s.locationsHeroImage ?? '',
         });
       }
     } catch (e) {
@@ -80,6 +91,33 @@ export default function SiteSettingsPage() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: form,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setFormData((prev) => ({ ...prev, locationsHeroImage: data.url || data.path || '' }));
+      } else {
+        alert('Image upload failed. Please try again.');
+      }
+    } catch {
+      alert('Error uploading image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const set = (field: keyof SiteSettings, val: string) =>
     setFormData((prev) => ({ ...prev, [field]: val }));
 
@@ -99,7 +137,7 @@ export default function SiteSettingsPage() {
       <div className="admin-dashboard-header">
         <h1 className="admin-dashboard-header__title">Site Settings</h1>
         <p className="admin-dashboard-header__sub">
-          Edit the global contact info and hero section content displayed on the public website.
+          Edit the global contact info, hero section content, and locations page displayed on the public website.
         </p>
       </div>
 
@@ -122,7 +160,7 @@ export default function SiteSettingsPage() {
               />
             </div>
             <div>
-              <label className="admin-form__label">Phone Tel (href="tel:…")</label>
+              <label className="admin-form__label">Phone Tel (href=&quot;tel:…&quot;)</label>
               <input
                 type="text"
                 className="admin-form__input"
@@ -155,9 +193,9 @@ export default function SiteSettingsPage() {
           </div>
         </div>
 
-        {/* ── Hero Section ─────────────────────── */}
+        {/* ── Home Hero Section ─────────────────── */}
         <div className="admin-settings-section">
-          <h3 className="admin-settings-section__title">Hero Section Copy</h3>
+          <h3 className="admin-settings-section__title">Home Page Hero Section</h3>
 
           <div className="admin-form__group">
             <label className="admin-form__label">Hero Title — Gold Line</label>
@@ -190,6 +228,89 @@ export default function SiteSettingsPage() {
               value={formData.heroSubtitle}
               onChange={(e) => set('heroSubtitle', e.target.value)}
             />
+          </div>
+        </div>
+
+        {/* ── Locations Page Hero ───────────────── */}
+        <div className="admin-settings-section">
+          <h3 className="admin-settings-section__title">Locations Page Hero</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
+            Controls the banner displayed at the top of the public <strong>/locations</strong> page.
+          </p>
+
+          <div className="admin-form__group">
+            <label className="admin-form__label">Hero Heading</label>
+            <input
+              type="text"
+              className="admin-form__input"
+              value={formData.locationsHeroTitle}
+              onChange={(e) => set('locationsHeroTitle', e.target.value)}
+              placeholder="Our Service Locations"
+            />
+          </div>
+
+          <div className="admin-form__group">
+            <label className="admin-form__label">Hero Subtitle</label>
+            <input
+              type="text"
+              className="admin-form__input"
+              value={formData.locationsHeroSubtitle}
+              onChange={(e) => set('locationsHeroSubtitle', e.target.value)}
+              placeholder="Luxury Executive Transport Across the Greater Area"
+            />
+          </div>
+
+          <div className="admin-form__group">
+            <label className="admin-form__label">Hero Background Image</label>
+
+            {formData.locationsHeroImage && (
+              <div style={{ marginBottom: '0.75rem', position: 'relative', borderRadius: 8, overflow: 'hidden', maxHeight: 160, background: '#000' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={formData.locationsHeroImage}
+                  alt="Locations hero preview"
+                  style={{ width: '100%', height: 160, objectFit: 'cover', opacity: 0.85 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => set('locationsHeroImage', '')}
+                  style={{
+                    position: 'absolute', top: 8, right: 8,
+                    background: 'rgba(244,63,94,0.9)', color: '#fff',
+                    border: 'none', borderRadius: 6, padding: '4px 10px',
+                    cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                  }}
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+              />
+              <button
+                type="button"
+                className="admin-btn--ghost"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? 'Uploading…' : '📁 Upload Image'}
+              </button>
+              {formData.locationsHeroImage && (
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
+                  {formData.locationsHeroImage}
+                </span>
+              )}
+            </div>
+            <span className="admin-form__hint">
+              Recommended: wide landscape image (1920×600px). Supports JPEG, PNG, WebP.
+            </span>
           </div>
         </div>
 

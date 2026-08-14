@@ -25,6 +25,9 @@ export async function GET() {
         heroTitleGold: 'Boston Luxury Chauffeur',
         heroTitleMain: '— Logan Airport Car Service',
         heroSubtitle: 'Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers',
+        locationsHeroTitle: 'Our Service Locations',
+        locationsHeroSubtitle: 'Luxury Executive Transport Across the Greater Area',
+        locationsHeroImage: null,
       },
     });
   } catch (error) {
@@ -50,29 +53,28 @@ export async function PUT(request: Request) {
       heroTitleGold,
       heroTitleMain,
       heroSubtitle,
+      locationsHeroTitle,
+      locationsHeroSubtitle,
+      locationsHeroImage,
     } = body;
+
+    const data = {
+      phoneDisplay,
+      phoneTel,
+      dispatchEmail,
+      serviceAddress,
+      heroTitleGold,
+      heroTitleMain,
+      heroSubtitle,
+      ...(locationsHeroTitle !== undefined && { locationsHeroTitle }),
+      ...(locationsHeroSubtitle !== undefined && { locationsHeroSubtitle }),
+      ...(locationsHeroImage !== undefined && { locationsHeroImage }),
+    };
 
     const settings = await prisma.siteSetting.upsert({
       where: { id: 'default' },
-      update: {
-        phoneDisplay,
-        phoneTel,
-        dispatchEmail,
-        serviceAddress,
-        heroTitleGold,
-        heroTitleMain,
-        heroSubtitle,
-      },
-      create: {
-        id: 'default',
-        phoneDisplay,
-        phoneTel,
-        dispatchEmail,
-        serviceAddress,
-        heroTitleGold,
-        heroTitleMain,
-        heroSubtitle,
-      },
+      update: data,
+      create: { id: 'default', ...data },
     });
 
     return NextResponse.json({ success: true, settings });
