@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
 
         <div className="admin-login__header">
           <img
-            src="/images/gm-logo-1-1.png"
+            src="/images/logo.png"
             alt="GM Limo Services"
             className="admin-login__logo"
           />
