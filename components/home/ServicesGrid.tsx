@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
 interface ServiceGridItem {
   id: string;
@@ -48,24 +49,40 @@ export default async function ServicesGrid() {
         <div className="services-grid" role="list">
           {services.map((item) => (
             <article key={item.id} className="service-card" role="listitem">
-              <div className="service-card__thumb">
+              <Link
+                href={`/services/${item.slug}`}
+                className="service-card__thumb"
+                aria-label={`View details of ${item.title}`}
+              >
                 <div className="service-card__ribbon" aria-hidden="true"></div>
                 <span className="service-card__tag">{item.tag}</span>
                 <img src={item.image} alt={item.title} loading="lazy" />
-              </div>
+              </Link>
 
               <div className="service-card__body">
-                <h3 className="service-card__title">{item.title}</h3>
+                <h3 className="service-card__title">
+                  <Link href={`/services/${item.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {item.title}
+                  </Link>
+                </h3>
                 <p className="service-card__desc">{item.description}</p>
               </div>
 
               <div className="service-card__footer">
                 <Link
-                  href="/book"
-                  className="btn btn--gold btn--full"
+                  href={`/services/${item.slug}`}
+                  className="btn btn--outline-gold btn--sm flex-1 text-center justify-center"
+                  aria-label={`View details for ${item.title}`}
+                >
+                  <span>Details</span>
+                  <ArrowRight size={14} />
+                </Link>
+                <Link
+                  href={`/book?service=${item.slug}`}
+                  className="btn btn--gold btn--sm flex-1 text-center justify-center"
                   aria-label={`Book ${item.title}`}
                 >
-                  Book Service
+                  <span>Book Now</span>
                 </Link>
               </div>
             </article>

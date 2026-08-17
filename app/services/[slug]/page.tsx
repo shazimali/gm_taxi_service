@@ -1,23 +1,53 @@
 import React from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CheckCircle2, ArrowRight, Phone } from 'lucide-react';
+import { Check, ArrowRight, Phone } from 'lucide-react';
 import { SERVICES_DATA } from '@/data/servicesData';
 import { prisma } from '@/lib/prisma';
 
+export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
-export async function generateStaticParams() {
-  return SERVICES_DATA.map((service) => ({
-    slug: service.slug,
-  }));
+export interface ServiceBullet {
+  title: string;
+  description: string;
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export interface ServiceModule {
+  id?: string;
+  heading: string;
+  image: string;
+  imagePosition?: 'left' | 'right';
+  bullets: ServiceBullet[];
+}
+
+export async function generateStaticParams() {
+  const staticSlugs = SERVICES_DATA.map((service) => ({
+    slug: service.slug,
+  }));
+
+  try {
+    const dbServices = await prisma.service.findMany({ select: { slug: true } });
+    const dbSlugs = dbServices.map((s) => ({ slug: s.slug }));
+    const combined = [...staticSlugs, ...dbSlugs];
+    const uniqueSlugs = Array.from(new Set(combined.map((s) => s.slug)));
+    return uniqueSlugs.map((slug) => ({ slug }));
+  } catch {
+    return staticSlugs;
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string } | Promise<{ slug: string }>;
+}) {
+  const resolvedParams = await params;
+  const currentSlug = resolvedParams.slug;
+
   try {
     const dbService = await prisma.service.findUnique({
-      where: { slug: params.slug },
+      where: { slug: currentSlug },
     });
     if (dbService) {
       return {
@@ -27,7 +57,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     }
   } catch {}
 
-  const service = SERVICES_DATA.find((s) => s.slug === params.slug);
+  const service = SERVICES_DATA.find((s) => s.slug === currentSlug);
   if (!service) return { title: 'Service Not Found' };
   return {
     title: `${service.title} | GM Limo Services Boston`,
@@ -35,43 +65,48 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function SingleServicePage({ params }: { params: { slug: string } }) {
+export default async function SingleServicePage({
+  params,
+}: {
+  params: { slug: string } | Promise<{ slug: string }>;
+}) {
+  const resolvedParams = await params;
+  const currentSlug = resolvedParams.slug;
+
   let title = '';
   let badge = 'Service';
   let icon = '🚘';
   let tagline = '';
-  let fullDesc = '';
   let image = '';
-  let benefits: string[] = [];
-  let keyFeatures: string[] = [];
+  let modules: ServiceModule[] = [];
 
-  // 1. Try fetching from live MySQL database
+  // 1. Fetch from live MySQL database
   try {
     const dbService = await prisma.service.findUnique({
-      where: { slug: params.slug },
+      where: { slug: currentSlug },
     });
 
     if (dbService) {
       title = dbService.name;
       tagline = dbService.tagline || '';
-      fullDesc = dbService.fullDetails || dbService.description || '';
       image = dbService.image || '/images/Boston-Luxury-Chauffeur.webp';
-      badge = dbService.tagline || 'Service';
-      
-      if (typeof dbService.benefits === 'string' && dbService.benefits) {
-        try { benefits = JSON.parse(dbService.benefits); } catch { benefits = [dbService.benefits]; }
-      }
-      if (typeof dbService.features === 'string' && dbService.features) {
-        try { keyFeatures = JSON.parse(dbService.features); } catch { keyFeatures = [dbService.features]; }
+      badge = dbService.tagline || 'Chauffeur Service';
+
+      if (dbService.fullDetails && dbService.fullDetails.trim().startsWith('[')) {
+        try {
+          modules = JSON.parse(dbService.fullDetails);
+        } catch {
+          modules = [];
+        }
       }
     }
   } catch (err) {
     console.error('Error loading service from DB:', err);
   }
 
-  // 2. Fallback to static data if database record not found
+  // 2. Fallback to static data if not found in database
   if (!title) {
-    const staticService = SERVICES_DATA.find((s) => s.slug === params.slug);
+    const staticService = SERVICES_DATA.find((s) => s.slug === currentSlug);
     if (!staticService) {
       notFound();
     }
@@ -79,115 +114,208 @@ export default async function SingleServicePage({ params }: { params: { slug: st
     badge = staticService.badge;
     icon = staticService.icon;
     tagline = staticService.tagline;
-    fullDesc = staticService.fullDesc;
     image = staticService.image;
-    benefits = staticService.benefits;
-    keyFeatures = staticService.keyFeatures;
   }
 
+  // If no modules exist yet, generate standard starter modules matching reference design
+  if (modules.length === 0) {
+    modules = [
+      {
+        id: 'mod-1',
+        heading: `Why Choose GM Limo Services for ${title}?`,
+        image: image || '/images/Boston-Luxury-Chauffeur.webp',
+        imagePosition: 'left',
+        bullets: [
+          {
+            title: 'Luxury Fleet Options',
+            description:
+              'From sleek sedans to executive SUVs, we offer a diverse fleet to suit individual executives or large corporate groups.',
+          },
+          {
+            title: 'Experienced Chauffeurs',
+            description:
+              'Our drivers are trained to deliver discreet, professional, and reliable service for every client.',
+          },
+          {
+            title: 'Tailored Business Solutions',
+            description:
+              'We design transportation plans to fit the specific needs of your company, whether daily, weekly, or event-based.',
+          },
+        ],
+      },
+      {
+        id: 'mod-2',
+        heading: `Benefits of ${title} With GM Limo Services`,
+        image: '/images/Event-Transportation-e1763052056749.webp',
+        imagePosition: 'right',
+        bullets: [
+          {
+            title: 'Professional Image',
+            description:
+              'Arriving in a luxury vehicle enhances your credibility and sets the right tone for business meetings.',
+          },
+          {
+            title: 'Stress-Free Transportation',
+            description:
+              'With our skilled chauffeurs and efficient planning, you can focus on work while we handle the roads.',
+          },
+          {
+            title: 'Time Efficiency',
+            description:
+              'We provide punctual, reliable transportation so you never waste valuable time waiting or navigating traffic.',
+          },
+        ],
+      },
+    ];
+  }
+
+  const heroBackgroundImage = image || '/images/Boston-Luxury-Chauffeur.webp';
+
   return (
-    <div className="pt-28 pb-20 bg-neutral-950 text-neutral-100">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs text-neutral-400 mb-8">
-          <Link href="/" className="hover:text-[#c5a059]">Home</Link>
-          <span>/</span>
-          <Link href="/services" className="hover:text-[#c5a059]">Services</Link>
-          <span>/</span>
-          <span className="text-white font-medium">{title}</span>
+    <main className="service-detail-page min-h-screen">
+      {/* ── 1. Hero Section (Using Service Uploaded Image & Service Name) ── */}
+      <section
+        className="about-us-hero"
+        style={{
+          backgroundImage: `linear-gradient(rgba(17, 17, 17, 0.72), rgba(17, 17, 17, 0.72)), url('${heroBackgroundImage}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          paddingTop: '7.5rem',
+          paddingBottom: '5rem',
+        }}
+      >
+        <div className="about-us-hero__inner">
+          {/* Breadcrumb Navigation */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              fontSize: '0.82rem',
+              color: 'rgba(255,255,255,0.7)',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <Link
+              href="/"
+              style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}
+              className="hover:text-[#c5a059]"
+            >
+              Home
+            </Link>
+            <span>/</span>
+            <Link
+              href="/services"
+              style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}
+              className="hover:text-[#c5a059]"
+            >
+              Services
+            </Link>
+            <span>/</span>
+            <span style={{ color: '#ffffff', fontWeight: 600 }}>{title}</span>
+          </div>
+
+          <span className="about-section-tag" style={{ color: '#f5e4ab' }}>
+            {icon} {badge.toUpperCase()}
+          </span>
+
+          {/* Heading as Service Name */}
+          <h1 className="about-us-hero__title">{title}</h1>
+
+          {/* Subtitle Tagline */}
+          {tagline && <p className="about-us-hero__desc">{tagline}</p>}
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          {/* Left Column: Image & Details */}
-          <div className="lg:col-span-7 flex flex-col gap-8">
-            <div className="relative h-80 sm:h-96 w-full rounded-2xl overflow-hidden border border-white/10 glass-card shadow-2xl">
-              <img
-                src={image}
-                alt={title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-4 left-4 bg-neutral-950/80 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-bold text-[#c5a059] border border-white/10 flex items-center gap-1.5">
-                <span>{icon}</span>
-                <span>{badge}</span>
-              </div>
-            </div>
+      {/* ── 2. Structured Content Modules (Reference Design Layout) ── */}
+      <div className="service-modules-container">
+        {modules.map((mod, idx) => {
+          const isAltBackground = idx % 2 !== 0;
+          const isImageRight =
+            mod.imagePosition === 'right' || (mod.imagePosition === undefined && idx % 2 !== 0);
 
-            <div className="glass-card rounded-2xl p-8 border border-white/10">
-              <h1 className="font-serif text-3xl font-bold text-white mb-3">
-                {title}
-              </h1>
-              <p className="text-sm text-[#c5a059] font-medium mb-6">
-                {tagline}
-              </p>
-
-              <p className="text-neutral-300 text-sm leading-relaxed mb-8">
-                {fullDesc}
-              </p>
-
-              {benefits.length > 0 && (
-                <>
-                  <h3 className="font-serif text-xl font-bold text-white mb-4">
-                    Service Privileges &amp; Benefits
-                  </h3>
-                  <ul className="flex flex-col gap-3 mb-8">
-                    {benefits.map((benefit, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-sm text-neutral-200">
-                        <CheckCircle2 className="w-4 h-4 text-[#c5a059] shrink-0 mt-0.5" />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-
-              {keyFeatures.length > 0 && (
-                <>
-                  <h3 className="font-serif text-xl font-bold text-white mb-4">
-                    Core Service Capabilities
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {keyFeatures.map((feature, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-neutral-900 border border-white/5 text-xs text-neutral-300 font-medium">
-                        ⚡ {feature}
-                      </div>
-                    ))}
+          return (
+            <section
+              key={mod.id || idx}
+              className={`service-module-section ${
+                isAltBackground ? 'service-module-section--alt' : ''
+              }`}
+            >
+              <div className="container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                <div className="service-module-grid">
+                  {/* Left Column (Image if left, Content if image is right) */}
+                  <div
+                    style={{
+                      order: isImageRight ? 2 : 1,
+                    }}
+                  >
+                    <div className="service-module__img-wrapper">
+                      <img
+                        src={mod.image || '/images/Boston-Luxury-Chauffeur.webp'}
+                        alt={mod.heading}
+                        className="service-module__img"
+                        loading="lazy"
+                      />
+                    </div>
                   </div>
-                </>
-              )}
-            </div>
-          </div>
 
-          {/* Right Column: Reservation Sidebar */}
-          <div className="lg:col-span-5 flex flex-col gap-6 sticky top-28">
-            <div className="glass-card rounded-2xl p-8 border border-white/10 shadow-2xl">
-              <h3 className="font-serif text-xl font-bold text-white mb-2">
-                Reserve {title}
-              </h3>
-              <p className="text-xs text-neutral-400 mb-6">
-                Lock in your guaranteed rate with 24/7 live dispatch support.
-              </p>
+                  {/* Right Column (Content if left, Image if image is right) */}
+                  <div
+                    className="service-module__content"
+                    style={{
+                      order: isImageRight ? 1 : 2,
+                    }}
+                  >
+                    {/* Gold Circular Badge Icon */}
+                    <div className="service-module__icon-badge">
+                      <Check className="w-6 h-6 stroke-[3]" />
+                    </div>
 
-              <div className="flex flex-col gap-3">
-                <Link
-                  href={`/book?service=${params.slug}`}
-                  className="gold-btn-gradient text-neutral-950 font-bold text-center py-4 rounded-xl uppercase tracking-wider text-xs shadow-xl flex items-center justify-center gap-2 hover:scale-[1.01] transition-transform"
-                >
-                  <span>Book {title}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                    {/* Section Heading */}
+                    <h2 className="service-module__heading">{mod.heading}</h2>
 
-                <a
-                  href="tel:16177840264"
-                  className="py-3.5 rounded-xl border border-white/20 hover:border-[#c5a059] text-white font-bold text-xs text-center flex items-center justify-center gap-2 transition-colors"
-                >
-                  <Phone className="w-4 h-4 text-[#c5a059]" />
-                  <span>Call (617) 784-0264</span>
-                </a>
+                    {/* Bullet List */}
+                    {mod.bullets && mod.bullets.length > 0 && (
+                      <div className="service-module__bullets">
+                        {mod.bullets.map((bullet, bIdx) => (
+                          <div key={bIdx} className="service-module__bullet-item">
+                            <div className="service-module__bullet-icon">
+                              <Check className="w-5 h-5 stroke-[2.5]" />
+                            </div>
+                            <div className="service-module__bullet-text">
+                              <span className="service-module__bullet-title">
+                                {bullet.title}:
+                              </span>
+                              <span>{bullet.description}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Dual Action Buttons */}
+                    <div className="service-module__cta-row">
+                      <Link
+                        href={`/book?service=${currentSlug}`}
+                        className="service-module__btn-reserve"
+                      >
+                        <span>Book Now</span>
+                        <ArrowRight size={16} />
+                      </Link>
+
+                      <a href="tel:16177840264" className="service-module__btn-phone">
+                        <Phone size={15} />
+                        <span>(617) 784-0264</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
+            </section>
+          );
+        })}
       </div>
-    </div>
+    </main>
   );
 }
