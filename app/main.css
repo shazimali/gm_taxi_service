@@ -909,6 +909,11 @@ p {
   background-color: rgba(0, 0, 0, 0.02);
 }
 
+.travel-table__price {
+  font-weight: 700;
+  color: var(--clr-gold);
+}
+
 .zone-badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;

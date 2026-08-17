@@ -8,8 +8,18 @@ interface AirportItem {
   desc: string;
 }
 
+interface TravelRow {
+  location: string;
+  distance: string;
+  avgTime: string;
+  price?: string | null;
+  zone: string;
+  zoneCls: string;
+}
+
 export default async function AirportTransfers() {
   let airports: AirportItem[] = [];
+  let travelRows: TravelRow[] = [];
 
   try {
     const dbAirports = await prisma.airport.findMany({
@@ -25,6 +35,26 @@ export default async function AirportTransfers() {
     }
   } catch (error) {
     console.error('Error fetching airports from DB for home page:', error);
+  }
+
+  try {
+    const dbRates = await prisma.airportTravelRate.findMany({
+      where: { isActive: true },
+      orderBy: { displayOrder: 'asc' },
+    });
+
+    if (dbRates && dbRates.length > 0) {
+      travelRows = dbRates.map((r, idx) => ({
+        location: r.location,
+        distance: r.distance,
+        avgTime: r.time,
+        price: r.price,
+        zone: r.pickupZone,
+        zoneCls: idx % 2 === 0 ? 'zone-a' : 'zone-b',
+      }));
+    }
+  } catch (error) {
+    console.error('Error fetching travel rates from DB for home page:', error);
   }
 
   // Fallback if DB returns empty
@@ -63,14 +93,16 @@ export default async function AirportTransfers() {
     ];
   }
 
-  const travelRows = [
-    { location: 'Arlington, MA', distance: '11 miles', avgTime: '25 – 40m', zone: 'Meeting Point', zoneCls: 'zone-a' },
-    { location: 'Newton, MA', distance: '14 miles', avgTime: '30 – 45m', zone: 'Terminal C/E', zoneCls: 'zone-b' },
-    { location: 'Cambridge, MA', distance: '6 miles', avgTime: '20 – 30m', zone: 'Limo Stand', zoneCls: 'zone-a' },
-    { location: 'Lexington, MA', distance: '17 miles', avgTime: '35 – 50m', zone: 'Terminal B', zoneCls: 'zone-b' },
-    { location: 'Wellesley, MA', distance: '18 miles', avgTime: '35 – 50m', zone: 'Meeting Point', zoneCls: 'zone-a' },
-    { location: 'Westwood, MA', distance: '22 miles', avgTime: '40 – 55m', zone: 'Terminal B/C', zoneCls: 'zone-b' },
-  ];
+  if (travelRows.length === 0) {
+    travelRows = [
+      { location: 'Arlington, MA', distance: '11 miles', avgTime: '25 – 40m', price: '$75', zone: 'Meeting Point', zoneCls: 'zone-a' },
+      { location: 'Newton, MA', distance: '14 miles', avgTime: '30 – 45m', price: '$85', zone: 'Terminal C/E', zoneCls: 'zone-b' },
+      { location: 'Cambridge, MA', distance: '6 miles', avgTime: '20 – 30m', price: '$65', zone: 'Limo Stand', zoneCls: 'zone-a' },
+      { location: 'Lexington, MA', distance: '17 miles', avgTime: '35 – 50m', price: '$95', zone: 'Terminal B', zoneCls: 'zone-b' },
+      { location: 'Wellesley, MA', distance: '18 miles', avgTime: '35 – 50m', price: '$105', zone: 'Meeting Point', zoneCls: 'zone-a' },
+      { location: 'Westwood, MA', distance: '22 miles', avgTime: '40 – 55m', price: '$115', zone: 'Terminal B/C', zoneCls: 'zone-b' },
+    ];
+  }
 
   return (
     <section className="airport-section section-pad" id="airport-transfers" aria-labelledby="airport-heading">
@@ -116,6 +148,7 @@ export default async function AirportTransfers() {
                 <th scope="col">Pickup Location</th>
                 <th scope="col">Distance</th>
                 <th scope="col">Avg. Time</th>
+                <th scope="col">Est. Rate</th>
                 <th scope="col">Pickup Zone</th>
               </tr>
             </thead>
@@ -125,6 +158,7 @@ export default async function AirportTransfers() {
                   <td>{row.location}</td>
                   <td>{row.distance}</td>
                   <td>{row.avgTime}</td>
+                  <td className="travel-table__price">{row.price || '—'}</td>
                   <td>
                     <span className={`zone-badge ${row.zoneCls}`}>{row.zone}</span>
                   </td>

@@ -11,17 +11,19 @@ import {
   CalendarCheck, 
   Settings, 
   ExternalLink,
-  MapPin
+  MapPin,
+  Route
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/admin',           label: 'Dashboard',         icon: LayoutDashboard },
-  { href: '/admin/fleet',     label: 'Fleet Management',  icon: Car },
-  { href: '/admin/services',  label: 'Services Catalog',  icon: Sparkles },
-  { href: '/admin/airports',  label: 'Airports & Rates',  icon: Plane },
-  { href: '/admin/locations', label: 'Locations',         icon: MapPin },
-  { href: '/admin/bookings',  label: 'Customer Bookings', icon: CalendarCheck },
-  { href: '/admin/settings',  label: 'Site Settings',     icon: Settings },
+  { href: '/admin',              label: 'Dashboard',            icon: LayoutDashboard },
+  { href: '/admin/fleet',        label: 'Fleet Management',     icon: Car },
+  { href: '/admin/services',     label: 'Services Catalog',     icon: Sparkles },
+  { href: '/admin/airports',     label: 'Airports & Rates',     icon: Plane },
+  { href: '/admin/travel-rates', label: 'Travel Times & Rates', icon: Route },
+  { href: '/admin/locations',    label: 'Locations',            icon: MapPin },
+  { href: '/admin/bookings',     label: 'Customer Bookings',    icon: CalendarCheck },
+  { href: '/admin/settings',     label: 'Site Settings',        icon: Settings },
 ];
 
 export default function AdminNav() {

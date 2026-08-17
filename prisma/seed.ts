@@ -183,7 +183,36 @@ async function main() {
     });
   }
   console.log('Services seeded into MySQL.');
+
+  // 5. Travel Times & Distances Seed
+  const travelRates = [
+    { location: 'Arlington, MA', distance: '11 miles', time: '25 – 40m', price: '$75', pickupZone: 'Meeting Point', displayOrder: 1 },
+    { location: 'Newton, MA', distance: '14 miles', time: '30 – 45m', price: '$85', pickupZone: 'Terminal C/E', displayOrder: 2 },
+    { location: 'Cambridge, MA', distance: '6 miles', time: '20 – 30m', price: '$65', pickupZone: 'Limo Stand', displayOrder: 3 },
+    { location: 'Lexington, MA', distance: '17 miles', time: '35 – 50m', price: '$95', pickupZone: 'Terminal B', displayOrder: 4 },
+    { location: 'Wellesley, MA', distance: '18 miles', time: '35 – 50m', price: '$105', pickupZone: 'Meeting Point', displayOrder: 5 },
+    { location: 'Westwood, MA', distance: '22 miles', time: '40 – 55m', price: '$115', pickupZone: 'Terminal B/C', displayOrder: 6 },
+  ];
+
+  const existingRatesCount = await prisma.airportTravelRate.count();
+  if (existingRatesCount === 0) {
+    for (const rate of travelRates) {
+      await prisma.airportTravelRate.create({
+        data: {
+          location: rate.location,
+          distance: rate.distance,
+          time: rate.time,
+          price: rate.price,
+          pickupZone: rate.pickupZone,
+          displayOrder: rate.displayOrder,
+          isActive: true,
+        },
+      });
+    }
+    console.log('Airport travel rates seeded into MySQL.');
+  }
 }
+
 
 main()
   .catch((e) => {
