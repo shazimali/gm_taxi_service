@@ -1,4 +1,4 @@
-import { getAuthenticatedAdmin } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { Bell, Moon, Search } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
@@ -11,14 +11,14 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const admin = await getAuthenticatedAdmin();
+  const user = await getCurrentUser();
 
-  // If unauthenticated (e.g. login page), render child without top header and sidebar
-  if (!admin) {
+  // If unauthenticated or not an admin, render child without top header and sidebar
+  if (!user || user.role !== 'ADMIN') {
     return <div className="admin-body">{children}</div>;
   }
 
-  const initials = admin.name
+  const initials = (user.name || 'Admin')
     .split(' ')
     .map((n) => n[0])
     .join('')
@@ -30,7 +30,7 @@ export default async function AdminLayout({
       {/* ── TAILADMIN SIDEBAR ────────────────── */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar__header">
-          <Link href="/admin" style={{ textDecoration: 'none' }}>
+          <Link href="/dashboard" style={{ textDecoration: 'none' }}>
             <img
               src="/images/logo.png"
               alt="GM Limo"
@@ -85,8 +85,8 @@ export default async function AdminLayout({
             <div className="admin-header__user-profile">
               <div className="admin-header__avatar">{initials}</div>
               <div className="admin-header__user-info">
-                <span className="admin-header__user-name">{admin.name}</span>
-                <span className="admin-header__user-role">{admin.role || 'Administrator'}</span>
+                <span className="admin-header__user-name">{user.name}</span>
+                <span className="admin-header__user-role">{user.role || 'Administrator'}</span>
               </div>
             </div>
           </div>

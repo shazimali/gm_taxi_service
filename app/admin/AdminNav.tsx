@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/admin',              label: 'Dashboard',            icon: LayoutDashboard },
+  { href: '/dashboard',          label: 'Dashboard Overview',   icon: LayoutDashboard },
   { href: '/admin/fleet',        label: 'Fleet Management',     icon: Car },
   { href: '/admin/services',     label: 'Services Catalog',     icon: Sparkles },
   { href: '/admin/airports',     label: 'Airports & Rates',     icon: Plane },
@@ -30,7 +30,7 @@ export default function AdminNav() {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === '/admin') return pathname === '/admin';
+    if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   };
 

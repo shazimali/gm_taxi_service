@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { prisma as globalPrisma } from '@/lib/prisma';
-import { signPassengerToken } from '@/lib/passengerAuth';
+import { signPassengerToken } from '@/lib/auth';
 import { rateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentPassenger, revokePassengerSessions } from '@/lib/passengerAuth';
+import { getCurrentPassenger, revokePassengerSessions } from '@/lib/auth';
 
 export async function POST() {
   const passenger = await getCurrentPassenger();

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { prisma as globalPrisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
-import { signPassengerToken } from '@/lib/passengerAuth';
+import { signPassengerToken } from '@/lib/auth';
 import { enqueueEmail } from '@/lib/queue/emailQueue';
 
 export async function POST(req: Request) {

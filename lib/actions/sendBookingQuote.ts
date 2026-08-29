@@ -1,7 +1,6 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
-import { enqueueEmail } from '@/lib/queue/emailQueue';
+import { bookingService } from '@/lib/services/BookingService';
 
 export interface BookingState {
   success?: boolean;
@@ -29,75 +28,32 @@ export async function sendBookingQuote(prevState: BookingState, formData: FormDa
   const paymentStatus = formData.get('paymentStatus')?.toString() || (stripePaymentIntentId ? 'HOLD_PLACED' : 'PENDING');
   const estimatedPrice = Number(formData.get('estimatedPrice')?.toString()) || null;
 
-  if (!fullName || !email || !phone || !pickupLocation || !pickupDate) {
-    return {
-      error: 'Please fill in all required fields (Name, Email, Phone, Pickup Location & Date).',
-    };
+  const result = await bookingService.submitBooking({
+    serviceType,
+    vehicleSlug,
+    pickupLocation,
+    dropoffLocation,
+    pickupDate,
+    pickupTime,
+    passengers,
+    luggage,
+    flightNumber,
+    fullName,
+    email,
+    phone,
+    specialRequests,
+    stripePaymentIntentId,
+    paymentStatus,
+    estimatedPrice,
+  });
+
+  if (!result.success) {
+    return { error: result.error };
   }
 
-  // Generate confirmation number
-  const confirmationNumber = 'GML-' + Math.floor(100000 + Math.random() * 900000);
-
-  try {
-    // Find matching passenger account if exists
-    const existingPassenger = await prisma.passenger.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-
-    // Save to local MySQL database via Prisma
-    await prisma.booking.create({
-      data: {
-        confirmationNumber,
-        fullName,
-        email: email.toLowerCase(),
-        phone,
-        serviceType,
-        vehicleSlug,
-        pickupLocation,
-        dropoffLocation,
-        pickupDate,
-        pickupTime,
-        passengers,
-        luggage,
-        flightNumber,
-        specialRequests,
-        status: 'PENDING',
-        passengerId: existingPassenger?.id || null,
-        stripePaymentIntentId: stripePaymentIntentId,
-        paymentStatus: paymentStatus,
-        estimatedPrice: estimatedPrice,
-      },
-    });
-
-    // Enqueue Ride Confirmation Email Job to BullMQ Redis Queue
-    await enqueueEmail('BOOKING_CONFIRMATION_EMAIL', {
-      booking: {
-        confirmationNumber,
-        fullName,
-        email: email.toLowerCase(),
-        phone,
-        serviceType,
-        vehicleSlug,
-        pickupLocation,
-        dropoffLocation,
-        pickupDate,
-        pickupTime,
-        passengers,
-        luggage,
-        flightNumber,
-        estimatedPrice,
-      },
-    });
-
-    return {
-      success: true,
-      confirmationNumber,
-      message: `Your reservation request ${confirmationNumber} has been submitted! ${stripePaymentIntentId ? 'Funds pre-authorization hold placed successfully.' : 'Our dispatch desk is reviewing your trip details.'}`,
-    };
-  } catch (err) {
-    console.error('Error saving booking to MySQL:', err);
-    return {
-      error: 'Failed to process booking submission. Please try again or call (617) 784-0264.',
-    };
-  }
+  return {
+    success: true,
+    confirmationNumber: result.confirmationNumber,
+    message: result.message,
+  };
 }

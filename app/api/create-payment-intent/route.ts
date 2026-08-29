@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { getCurrentPassenger } from '@/lib/passengerAuth';
+import { getCurrentPassenger } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 

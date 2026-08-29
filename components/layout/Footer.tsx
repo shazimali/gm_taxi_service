@@ -2,11 +2,26 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function Footer() {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  if (pathname?.startsWith('/admin')) {
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user?.role === 'ADMIN') {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      })
+      .catch(() => setIsAdmin(false));
+  }, [pathname]);
+
+  if (pathname?.startsWith('/admin') || (pathname === '/dashboard' && isAdmin)) {
     return null;
   }
   return (
