@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { bookingRepository } from '@/lib/repositories';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,23 +14,16 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get('email');
+    const email = searchParams.get('email') ?? undefined;
 
-    // ── Admin: full access, optional email filter ─────────────────────────
+    // ── Admin: full access via repository, optional email filter ──────────
     if (session.role === 'ADMIN') {
-      const whereClause = email ? { email: email.toLowerCase() } : {};
-      const bookings = await prisma.booking.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-      });
+      const bookings = await bookingRepository.findAll({ email });
       return NextResponse.json({ bookings });
     }
 
     // ── Passenger: scoped to their own bookings only ──────────────────────
-    const bookings = await prisma.booking.findMany({
-      where: { passengerId: session.userId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const bookings = await bookingRepository.findByPassengerId(session.userId);
     return NextResponse.json({ bookings });
 
   } catch (error: any) {
@@ -38,3 +31,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+

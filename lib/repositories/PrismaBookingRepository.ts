@@ -30,10 +30,14 @@ export class PrismaBookingRepository implements IBookingRepository {
 
   async findAll(options?: {
     status?: BookingStatus;
+    email?: string;
     limit?: number;
     offset?: number;
   }): Promise<Booking[]> {
-    const where = options?.status ? { status: options.status } : undefined;
+    const where: Record<string, unknown> = {};
+    if (options?.status) where.status = options.status;
+    if (options?.email)  where.email  = options.email.toLowerCase();
+
     const bookings = await prisma.booking.findMany({
       where,
       orderBy: { createdAt: 'desc' },

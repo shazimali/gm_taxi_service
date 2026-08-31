@@ -67,7 +67,7 @@ export interface IBookingRepository {
   findByConfirmationNumber(confirmationNumber: string): Promise<Booking | null>;
 
   /** List all bookings (admin) — most recent first */
-  findAll(options?: { status?: BookingStatus; limit?: number; offset?: number }): Promise<Booking[]>;
+  findAll(options?: { status?: BookingStatus; email?: string; limit?: number; offset?: number }): Promise<Booking[]>;
 
   /** List all bookings belonging to a specific passenger */
   findByPassengerId(passengerId: string): Promise<Booking[]>;
