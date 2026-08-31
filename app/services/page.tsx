@@ -1,5 +1,9 @@
-import React from 'react';
+import { Suspense } from 'react';
 import ServicesGrid from '@/components/home/ServicesGrid';
+
+// Force server-side rendering on every request so services
+// are always fetched fresh from the DB in production.
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Executive Services | GM Limo Services Boston',
@@ -23,8 +27,14 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* 2. Services Grid */}
-      <ServicesGrid />
+      {/* 2. Services Grid — streamed so the hero shows immediately */}
+      <Suspense fallback={
+        <div style={{ padding: '4rem', textAlign: 'center', color: '#64748b' }}>
+          Loading services…
+        </div>
+      }>
+        <ServicesGrid />
+      </Suspense>
     </main>
   );
 }
