@@ -60,7 +60,17 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // ── 3. /login & /register ─ Public pages ───────────────────────────────
+  // ── 3. /passenger/* ─ Passenger-only area ───────────────────────────────
+  //    No session          → redirect to home (/)
+  //    Logged in as ADMIN  → redirect to home (/)
+  if (pathname.startsWith('/passenger')) {
+    if (!isPassenger) {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+    return NextResponse.next();
+  }
+
+  // ── 4. /login & /register ─ Public pages ───────────────────────────────
   //    If already authenticated, send to dashboard
   if (pathname === '/login' || pathname === '/register') {
     if (isAuthenticated) {
@@ -69,15 +79,16 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // ── 4. Everything else ─ Allow through ────────────────────────────────
+  // ── 5. Everything else ─ Allow through ────────────────────────────────
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Run on admin, dashboard, login, register — skip static assets & API
+    // Run on admin, dashboard, passenger, login, register — skip static assets & API
     '/admin/:path*',
     '/dashboard/:path*',
+    '/passenger/:path*',
     '/login',
     '/register',
   ],

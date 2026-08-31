@@ -1,65 +1,51 @@
-interface RateLimitRecord {
-  count: number;
-  resetTime: number;
-}
-
-const rateLimitMap = new Map<string, RateLimitRecord>();
+import { redisConnection } from '@/lib/redis';
 
 /**
- * In-memory sliding window rate limiter for API routes.
- * @param ip - Client identifier (e.g. IP address)
- * @param limit - Maximum number of requests allowed within the window (default: 5)
- * @param windowMs - Time window in milliseconds (default: 60,000 ms / 1 minute)
+ * Redis-backed sliding-window rate limiter.
+ *
+ * Uses Redis INCR + EXPIRE so limits survive server restarts and work
+ * correctly across multiple Next.js worker processes.
+ *
+ * Falls back to allowing the request when Redis is unreachable (e.g. local
+ * dev without Redis running) so development is never blocked.
+ *
+ * @param key      Unique identifier for this rate-limit bucket (e.g. `login_<ip>`)
+ * @param limit    Maximum requests allowed within the window
+ * @param windowMs Time window in milliseconds
  */
-export function rateLimit(
-  ip: string,
+export async function rateLimit(
+  key: string,
   limit: number = 5,
   windowMs: number = 60 * 1000
-): { success: boolean; limit: number; remaining: number; resetTime: number } {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
+): Promise<{ success: boolean; limit: number; remaining: number; resetTime: number }> {
+  const windowSec = Math.ceil(windowMs / 1000);
+  const redisKey = `rl:${key}`;
 
-  // Clean up expired entries if map grows large
-  if (rateLimitMap.size > 5000) {
-    for (const [key, value] of rateLimitMap.entries()) {
-      if (now > value.resetTime) {
-        rateLimitMap.delete(key);
-      }
+  try {
+    // INCR atomically increments (creates key at 0 if absent)
+    const count = await redisConnection.incr(redisKey);
+
+    // Set expiry only on first request in the window
+    if (count === 1) {
+      await redisConnection.expire(redisKey, windowSec);
     }
+
+    // Get the remaining TTL so we can return an accurate resetTime
+    const ttl = await redisConnection.ttl(redisKey);
+    const resetTime = Date.now() + ttl * 1000;
+
+    if (count > limit) {
+      return { success: false, limit, remaining: 0, resetTime };
+    }
+
+    return { success: true, limit, remaining: limit - count, resetTime };
+  } catch {
+    // Redis unavailable — fail open so the app stays usable (log in dev)
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[rateLimit] Redis unavailable, skipping rate limit check.');
+    }
+    return { success: true, limit, remaining: limit, resetTime: Date.now() + windowMs };
   }
-
-  if (!record || now > record.resetTime) {
-    const newRecord: RateLimitRecord = {
-      count: 1,
-      resetTime: now + windowMs,
-    };
-    rateLimitMap.set(ip, newRecord);
-    return {
-      success: true,
-      limit,
-      remaining: limit - 1,
-      resetTime: newRecord.resetTime,
-    };
-  }
-
-  if (record.count >= limit) {
-    return {
-      success: false,
-      limit,
-      remaining: 0,
-      resetTime: record.resetTime,
-    };
-  }
-
-  record.count += 1;
-  rateLimitMap.set(ip, record);
-
-  return {
-    success: true,
-    limit,
-    remaining: limit - record.count,
-    resetTime: record.resetTime,
-  };
 }
 
 export function getClientIp(req: Request): string {
@@ -73,3 +59,4 @@ export function getClientIp(req: Request): string {
   }
   return '127.0.0.1';
 }
+

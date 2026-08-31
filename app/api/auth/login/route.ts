@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client';
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
-    const limitResult = rateLimit(`unified_login_${ip}`, 10, 60 * 1000);
+    const limitResult = await rateLimit(`unified_login_${ip}`, 10, 60 * 1000);
 
     if (!limitResult.success) {
       return NextResponse.json(
