@@ -11,8 +11,12 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
-      - REDIS_HOST=${REDIS_HOST:-everyday_redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+      - DISPATCH_EMAIL=${DISPATCH_EMAIL}
     networks:
       - global_network
     volumes:
