@@ -1,7 +1,20 @@
 import React from 'react';
 import Link from 'next/link';
+import { prisma } from '@/lib/prisma';
 
-export default function BookingSteps() {
+export default async function BookingSteps() {
+  let phoneDisplay = '(617) 784-0264';
+  let phoneTel = '16177840264';
+
+  try {
+    const settings = await prisma.siteSetting.findUnique({
+      where: { id: 'default' },
+    });
+    if (settings?.phoneDisplay) phoneDisplay = settings.phoneDisplay;
+    if (settings?.phoneTel) phoneTel = settings.phoneTel;
+  } catch (err) {
+    console.error('Error fetching settings for BookingSteps:', err);
+  }
   const steps = [
     {
       number: '1',
@@ -92,9 +105,9 @@ export default function BookingSteps() {
             Book Now — It's Free to Quote
           </Link>
           <a
-            href="tel:16177840264"
+            href={`tel:${phoneTel}`}
             className="btn btn--ghost"
-            aria-label="Call us at (617) 784-0264"
+            aria-label={`Call us at ${phoneDisplay}`}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -106,7 +119,7 @@ export default function BookingSteps() {
             >
               <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" />
             </svg>
-            Prefer to Call? <strong>(617) 784-0264</strong>
+            Prefer to Call? <strong>{phoneDisplay}</strong>
           </a>
         </div>
       </div>

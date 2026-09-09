@@ -79,12 +79,18 @@ export default async function SingleServicePage({
   let tagline = '';
   let image = '';
   let modules: ServiceModule[] = [];
+  let phoneDisplay = '(617) 784-0264';
+  let phoneTel = '16177840264';
 
   // 1. Fetch from live MySQL database
   try {
-    const dbService = await prisma.service.findUnique({
-      where: { slug: currentSlug },
-    });
+    const [dbService, dbSettings] = await Promise.all([
+      prisma.service.findUnique({ where: { slug: currentSlug } }),
+      prisma.siteSetting.findUnique({ where: { id: 'default' } }),
+    ]);
+
+    if (dbSettings?.phoneDisplay) phoneDisplay = dbSettings.phoneDisplay;
+    if (dbSettings?.phoneTel) phoneTel = dbSettings.phoneTel;
 
     if (dbService) {
       title = dbService.name;
@@ -304,9 +310,9 @@ export default async function SingleServicePage({
                         <ArrowRight size={16} />
                       </Link>
 
-                      <a href="tel:16177840264" className="service-module__btn-phone">
+                      <a href={`tel:${phoneTel}`} className="service-module__btn-phone" aria-label={`Call us at ${phoneDisplay}`}>
                         <Phone size={15} />
-                        <span>(617) 784-0264</span>
+                        <span>{phoneDisplay}</span>
                       </a>
                     </div>
                   </div>

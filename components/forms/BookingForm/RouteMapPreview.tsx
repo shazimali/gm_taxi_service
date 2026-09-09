@@ -18,7 +18,18 @@ export const RouteMapPreview: React.FC<RouteMapPreviewProps> = ({
 }) => {
   const mapOrigin = encodeURIComponent(pickup || 'Boston Logan Airport');
   const mapDestination = encodeURIComponent(dropoff || 'Boston MA');
-  const googleMapEmbedUrl = `https://maps.google.com/maps?q=from+${mapOrigin}+to+${mapDestination}&output=embed`;
+
+  // Use Google Maps Embed API "directions" mode to show the actual driving route line
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  const googleMapEmbedUrl = apiKey
+    ? `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(apiKey)}&origin=${mapOrigin}&destination=${mapDestination}&mode=driving`
+    : `https://maps.google.com/maps?q=from+${mapOrigin}+to+${mapDestination}&output=embed`;
+
+  // Format duration: show hours + minutes when >= 60
+  const formattedDuration =
+    estimatedMinutes >= 60
+      ? `${Math.floor(estimatedMinutes / 60)} Hrs${estimatedMinutes % 60 > 0 ? ` ${estimatedMinutes % 60} Mins` : ''}`
+      : `${estimatedMinutes} Mins`;
 
   return (
     <div
@@ -61,7 +72,7 @@ export const RouteMapPreview: React.FC<RouteMapPreviewProps> = ({
             Distance: <strong style={{ color: '#b8860b', fontWeight: 800 }}>{estimatedMiles} Miles</strong>
           </span>
           <span>
-            Duration: <strong style={{ color: '#b8860b', fontWeight: 800 }}>{estimatedMinutes} Mins</strong>
+            Duration: <strong style={{ color: '#b8860b', fontWeight: 800 }}>{formattedDuration}</strong>
           </span>
         </div>
       </div>

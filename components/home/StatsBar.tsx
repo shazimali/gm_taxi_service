@@ -1,7 +1,20 @@
 import React from 'react';
 import Link from 'next/link';
+import { prisma } from '@/lib/prisma';
 
-export default function StatsBar() {
+export default async function StatsBar() {
+  let phoneDisplay = '(617) 784-0264';
+  let phoneTel = '16177840264';
+
+  try {
+    const settings = await prisma.siteSetting.findUnique({
+      where: { id: 'default' },
+    });
+    if (settings?.phoneDisplay) phoneDisplay = settings.phoneDisplay;
+    if (settings?.phoneTel) phoneTel = settings.phoneTel;
+  } catch (err) {
+    console.error('Error fetching settings for StatsBar:', err);
+  }
   const stats = [
     {
       value: '15+',
@@ -60,11 +73,11 @@ export default function StatsBar() {
             Book Your Chauffeur
           </Link>
           <a
-            href="tel:16177840264"
+            href={`tel:${phoneTel}`}
             className="btn btn--ghost"
-            aria-label="Call us at (617) 784-0264"
+            aria-label={`Call us at ${phoneDisplay}`}
           >
-            Or Call Us <strong>(617) 784-0264</strong>
+            Or Call Us <strong>{phoneDisplay}</strong>
           </a>
         </div>
       </div>

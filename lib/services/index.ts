@@ -13,3 +13,4 @@ export * from './interfaces/IBookingService';
 // Client-safe implementations & Singletons
 export * from './DistanceService';
 export * from './PricingService';
+export * from './GoogleMapsService';

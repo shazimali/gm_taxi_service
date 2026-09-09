@@ -56,12 +56,18 @@ export default async function SingleFleetPage({ params }: { params: { slug: stri
   let luggageCapacity = 3;
   let rateHourly: number | null = null;
   let features: string[] = [];
+  let phoneDisplay = '(617) 784-0264';
+  let phoneTel = '16177840264';
 
   // 1. Try fetching from live MySQL database
   try {
-    const dbVehicle = await prisma.vehicle.findUnique({
-      where: { slug: currentSlug },
-    });
+    const [dbVehicle, dbSettings] = await Promise.all([
+      prisma.vehicle.findUnique({ where: { slug: currentSlug } }),
+      prisma.siteSetting.findUnique({ where: { id: 'default' } }),
+    ]);
+
+    if (dbSettings?.phoneDisplay) phoneDisplay = dbSettings.phoneDisplay;
+    if (dbSettings?.phoneTel) phoneTel = dbSettings.phoneTel;
 
     if (dbVehicle) {
       name = dbVehicle.name;
@@ -380,9 +386,10 @@ export default async function SingleFleetPage({ params }: { params: { slug: stri
                     textDecoration: 'none',
                     transition: 'all 0.2s ease',
                   }}
+                  aria-label={`Call us at ${phoneDisplay}`}
                 >
                   <Phone size={16} color="#bfa054" />
-                  <span>Call (617) 784-0264</span>
+                  <span>Call {phoneDisplay}</span>
                 </a>
               </div>
 

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedAdmin } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
 
 // GET site settings (single record, id = "default")
 export async function GET() {
@@ -76,6 +79,12 @@ export async function PUT(request: Request) {
       update: data,
       create: { id: 'default', ...data },
     });
+
+    try {
+      revalidatePath('/', 'layout');
+    } catch (e) {
+      console.warn('Revalidate layout warning:', e);
+    }
 
     return NextResponse.json({ success: true, settings });
   } catch (error) {

@@ -50,11 +50,40 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+import { prisma } from '@/lib/prisma';
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let initialSettings = {
+    phoneDisplay: '(617) 784-0264',
+    phoneTel: '16177840264',
+    serviceAddress: 'Boston, Massachusetts, USA',
+    dispatchEmail: 'info@bostonluxurychauffeur.com',
+  };
+
+  try {
+    const dbSettings = await prisma.siteSetting.findUnique({
+      where: { id: 'default' },
+    });
+    if (dbSettings) {
+      initialSettings = {
+        phoneDisplay: dbSettings.phoneDisplay || initialSettings.phoneDisplay,
+        phoneTel: dbSettings.phoneTel || initialSettings.phoneTel,
+        serviceAddress: dbSettings.serviceAddress || initialSettings.serviceAddress,
+        dispatchEmail: dbSettings.dispatchEmail || initialSettings.dispatchEmail,
+      };
+    }
+  } catch (err) {
+    console.error('Error loading site settings in RootLayout:', err);
+  }
+
+  const jsonLdTelephone = initialSettings.phoneTel
+    ? `+${initialSettings.phoneTel.replace(/^\+/, '')}`
+    : '+1-617-784-0264';
+
   return (
     <html lang="en-US" data-scroll-behavior="smooth" className={`${inter.variable} ${playfair.variable}`}>
       <head>
@@ -66,8 +95,8 @@ export default function RootLayout({
               '@type': 'LimousineService',
               name: 'GM Limo Services',
               image: 'https://gmlimoservices.com/images/hero-bg.jpg',
-              telephone: '+1-617-784-0264',
-              email: 'info@bostonluxurychauffeur.com',
+              telephone: jsonLdTelephone,
+              email: initialSettings.dispatchEmail,
               address: {
                 '@type': 'PostalAddress',
                 addressLocality: 'Boston',
@@ -90,11 +119,11 @@ export default function RootLayout({
           <a className="skip-link screen-reader-text" href="#primary">
             Skip to content
           </a>
-          <Header />
+          <Header initialSettings={initialSettings} />
           <main id="primary" className="site-main">
             {children}
           </main>
-          <Footer />
+          <Footer initialSettings={initialSettings} />
         </div>
       </body>
     </html>

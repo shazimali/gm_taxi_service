@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Loader2, MapPin } from 'lucide-react';
+import { ArrowRight, Crosshair, Loader2, MapPin } from 'lucide-react';
 import { RouteMapPreview } from './RouteMapPreview';
 
 interface ServiceStepProps {
@@ -19,6 +19,8 @@ interface ServiceStepProps {
   dropoffSuggestions: string[];
   loadingPickup: boolean;
   loadingDropoff: boolean;
+  detectingPickupLocation: boolean;
+  detectCurrentPickupLocation: () => void;
   showPickupDropdown: boolean;
   setShowPickupDropdown: (val: boolean) => void;
   showDropoffDropdown: boolean;
@@ -56,6 +58,8 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
   dropoffSuggestions,
   loadingPickup,
   loadingDropoff,
+  detectingPickupLocation,
+  detectCurrentPickupLocation,
   showPickupDropdown,
   setShowPickupDropdown,
   showDropoffDropdown,
@@ -116,8 +120,39 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
       <div className="form-row">
         {/* Pickup Location Field */}
         <div className="form-group" style={{ position: 'relative' }} ref={pickupContainerRef}>
-          <label className="form-label">
-            Pickup Location <span className="req">*</span>
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+            <span>Pickup Location <span className="req">*</span></span>
+            {/* GPS Current Location Button */}
+            <button
+              type="button"
+              id="detect-pickup-location-btn"
+              onClick={detectCurrentPickupLocation}
+              disabled={detectingPickupLocation}
+              title="Detect my current location"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                fontSize: '0.73rem',
+                fontWeight: 600,
+                color: detectingPickupLocation ? '#94a3b8' : '#b8860b',
+                background: 'none',
+                border: '1px solid currentColor',
+                borderRadius: '6px',
+                padding: '2px 8px',
+                cursor: detectingPickupLocation ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.02em',
+              }}
+            >
+              {detectingPickupLocation ? (
+                <Loader2 size={11} className="animate-spin" />
+              ) : (
+                <Crosshair size={11} />
+              )}
+              {detectingPickupLocation ? 'Detecting…' : 'Use My Location'}
+            </button>
           </label>
           <div style={{ position: 'relative' }}>
             <input

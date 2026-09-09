@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { getCurrentPassenger } from '@/lib/auth';
+import { vehicleRepository } from '@/lib/repositories';
+import { pricingService } from '@/lib/services/PricingService';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +13,15 @@ const MAX_AMOUNT_USD = 10_000; // $10,000 maximum trip price
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { amount, vehicleSlug, pickupLocation, dropoffLocation, paymentMethodId } = body;
+    const {
+      vehicleSlug,
+      serviceType = 'Airport Transportation',
+      estimatedMinutes,
+      hourlyCount,
+      pickupLocation,
+      dropoffLocation,
+      paymentMethodId,
+    } = body;
 
     // ── Require authentication ────────────────────────────────────────────
     const passenger = await getCurrentPassenger();
@@ -19,22 +29,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    // ── Validate amount server-side (never trust the client amount) ───────
-    const parsedAmount = Number(amount);
-    if (!amount || isNaN(parsedAmount) || parsedAmount < MIN_AMOUNT_USD) {
+    // ── 🔒 Security: Compute price strictly server-side from vehicle rates & duration ──
+    // Never trust an 'amount' passed by the client!
+    const targetSlug = vehicleSlug || 'executive-sedan';
+    const vehicle = await vehicleRepository.findBySlug(targetSlug);
+    const rateHourly = vehicle?.rateHourly || 85;
+
+    const parsedMinutes = Number(estimatedMinutes);
+    const parsedHours = Number(hourlyCount);
+
+    const priceCalc = pricingService.calculate({
+      serviceType: String(serviceType),
+      rateHourly,
+      estimatedMinutes: !isNaN(parsedMinutes) && parsedMinutes > 0 ? parsedMinutes : 30,
+      hourlyCount: !isNaN(parsedHours) && parsedHours > 0 ? parsedHours : 2,
+    });
+
+    const calculatedTotal = priceCalc.numericTotal;
+
+    if (calculatedTotal < MIN_AMOUNT_USD || calculatedTotal > MAX_AMOUNT_USD) {
       return NextResponse.json(
-        { error: `Minimum trip amount is $${MIN_AMOUNT_USD}.` },
-        { status: 400 }
-      );
-    }
-    if (parsedAmount > MAX_AMOUNT_USD) {
-      return NextResponse.json(
-        { error: `Amount exceeds maximum allowed ($${MAX_AMOUNT_USD.toLocaleString()}).` },
+        { error: `Calculated fare ($${calculatedTotal}) is outside allowed limits.` },
         { status: 400 }
       );
     }
 
-    const amountInCents = Math.round(parsedAmount * 100);
+    const amountInCents = Math.round(calculatedTotal * 100);
 
     const paymentIntentOptions: any = {
       amount: amountInCents,
@@ -42,7 +62,8 @@ export async function POST(req: Request) {
       capture_method: 'manual', // 🔒 Hold funds until destination reached!
       payment_method_types: ['card'],
       metadata: {
-        vehicleSlug: vehicleSlug || 'executive-sedan',
+        vehicleSlug: targetSlug,
+        calculatedPrice: priceCalc.totalPrice,
         pickupLocation: pickupLocation || '',
         dropoffLocation: dropoffLocation || '',
         passengerId: passenger.id,
@@ -66,6 +87,7 @@ export async function POST(req: Request) {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       status: paymentIntent.status,
+      calculatedPrice: priceCalc.totalPrice,
     });
   } catch (error: any) {
     console.error('PaymentIntent Creation Error:', error);

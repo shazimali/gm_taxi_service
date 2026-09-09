@@ -62,8 +62,10 @@ export default function BookingForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: pricing.currentVehiclePrice.totalPrice,
+          serviceType: pricing.selectedService,
           vehicleSlug: pricing.selectedVehicle,
+          estimatedMinutes: pricing.estimatedMinutes,
+          hourlyCount: pricing.hourlyCount,
           pickupLocation: location.pickup,
           dropoffLocation: location.dropoff,
           paymentMethodId: auth.selectedCardId !== 'new' ? auth.selectedCardId : undefined,
@@ -75,6 +77,9 @@ export default function BookingForm() {
         if (intentData.paymentIntentId) {
           formData.set('stripePaymentIntentId', intentData.paymentIntentId);
           formData.set('paymentStatus', 'HOLD_PLACED');
+        }
+        if (intentData.calculatedPrice) {
+          formData.set('estimatedPrice', intentData.calculatedPrice);
         }
       }
     } catch (holdErr) {
@@ -137,6 +142,8 @@ export default function BookingForm() {
               dropoffSuggestions={location.dropoffSuggestions}
               loadingPickup={location.loadingPickup}
               loadingDropoff={location.loadingDropoff}
+              detectingPickupLocation={location.detectingPickupLocation}
+              detectCurrentPickupLocation={location.detectCurrentPickupLocation}
               showPickupDropdown={location.showPickupDropdown}
               setShowPickupDropdown={location.setShowPickupDropdown}
               showDropoffDropdown={location.showDropoffDropdown}

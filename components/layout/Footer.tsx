@@ -4,9 +4,31 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export default function Footer() {
+interface FooterProps {
+  initialSettings?: {
+    phoneDisplay?: string;
+    phoneTel?: string;
+    serviceAddress?: string;
+  };
+}
+
+export default function Footer({ initialSettings }: FooterProps = {}) {
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [phoneDisplay, setPhoneDisplay] = useState(initialSettings?.phoneDisplay || '(617) 784-0264');
+  const [phoneTel, setPhoneTel] = useState(initialSettings?.phoneTel || '16177840264');
+  const [serviceAddress, setServiceAddress] = useState(initialSettings?.serviceAddress || 'Boston, Massachusetts, USA');
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.phoneDisplay) setPhoneDisplay(data.phoneDisplay);
+        if (data.phoneTel) setPhoneTel(data.phoneTel);
+        if (data.serviceAddress) setServiceAddress(data.serviceAddress);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -118,11 +140,11 @@ export default function Footer() {
               <ul className="footer-contact-list" style={{ marginBottom: '0.75rem' }}>
                 <li className="footer-contact-item">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>
-                  <a href="tel:16177840264">(617) 784-0264</a>
+                  <a href={`tel:${phoneTel}`}>{phoneDisplay}</a>
                 </li>
                 <li className="footer-contact-item">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                  <span>Boston, Massachusetts, USA</span>
+                  <span>{serviceAddress}</span>
                 </li>
               </ul>
 

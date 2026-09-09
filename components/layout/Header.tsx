@@ -12,14 +12,33 @@ interface AuthUser {
   role: 'ADMIN' | 'PASSENGER';
 }
 
-export default function Header() {
+interface HeaderProps {
+  initialSettings?: {
+    phoneDisplay?: string;
+    phoneTel?: string;
+  };
+}
+
+export default function Header({ initialSettings }: HeaderProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [phoneDisplay, setPhoneDisplay] = useState(initialSettings?.phoneDisplay || '(617) 784-0264');
+  const [phoneTel, setPhoneTel] = useState(initialSettings?.phoneTel || '16177840264');
   const dropdownRef = useRef<HTMLLIElement>(null);
 
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.phoneDisplay) setPhoneDisplay(data.phoneDisplay);
+        if (data.phoneTel) setPhoneTel(data.phoneTel);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -307,9 +326,9 @@ export default function Header() {
         </nav>
 
         {/* ── Header CTA ───────────────────────────────────────────── */}
-        <a href="tel:16177840264" className="btn btn--gold btn--two-lines header-cta" id="header-call-btn">
+        <a href={`tel:${phoneTel}`} className="btn btn--gold btn--two-lines header-cta" id="header-call-btn" aria-label={`Call us at ${phoneDisplay}`}>
           <span className="btn-subtext">CALL FOR A QUICK QUOTE</span>
-          <span className="btn-maintext">(617) 784-0264</span>
+          <span className="btn-maintext">{phoneDisplay}</span>
         </a>
       </div>
     </header>
