@@ -251,29 +251,54 @@ export async function POST(req: Request) {
       });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_intent_data: {
-        capture_method: 'manual', // 🔒 Places pre-authorization hold on card!
+    const passengerId = passenger.id;
+
+    function buildSessionParams(customerId: string | null) {
+      return {
+        mode: 'payment' as const,
+        payment_intent_data: {
+          capture_method: 'manual' as const, // 🔒 Places pre-authorization hold on card!
+          metadata: {
+            bookingId: booking.id,
+            confirmationNumber: booking.confirmationNumber,
+            passengerId,
+          },
+        },
+        customer: customerId || undefined,
+        customer_email: customerId ? undefined : cleanEmail,
+        line_items: lineItems,
+        success_url: `${origin}/book/thank-you?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/book?cancelled=1`,
         metadata: {
           bookingId: booking.id,
           confirmationNumber: booking.confirmationNumber,
-          passengerId: passenger.id,
+          passengerId,
+          isNewPassenger: isNewPassenger ? 'true' : 'false',
+          tempPassword: isNewPassenger ? tempPlainPassword : '',
         },
-      },
-      customer: passenger.stripeCustomerId || undefined,
-      customer_email: passenger.stripeCustomerId ? undefined : cleanEmail,
-      line_items: lineItems,
-      success_url: `${origin}/book/thank-you?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/book?cancelled=1`,
-      metadata: {
-        bookingId: booking.id,
-        confirmationNumber: booking.confirmationNumber,
-        passengerId: passenger.id,
-        isNewPassenger: isNewPassenger ? 'true' : 'false',
-        tempPassword: isNewPassenger ? tempPlainPassword : '',
-      },
-    });
+      };
+    }
+
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(buildSessionParams(passenger.stripeCustomerId));
+    } catch (stripeErr: any) {
+      // The stored Stripe customer ID doesn't exist in this Stripe account/mode
+      // (e.g. left over from a different environment or key) — clear it and
+      // retry as a guest checkout via email instead of failing the booking.
+      if (stripeErr?.code === 'resource_missing' && stripeErr?.param === 'customer') {
+        console.warn(
+          `[CheckoutSession] Stale Stripe customer ${passenger.stripeCustomerId} for passenger ${passenger.id} — retrying without it.`
+        );
+        await prisma.passenger.update({
+          where: { id: passenger.id },
+          data: { stripeCustomerId: null },
+        });
+        session = await stripe.checkout.sessions.create(buildSessionParams(null));
+      } else {
+        throw stripeErr;
+      }
+    }
 
     // 7. Update booking with Stripe Checkout session ID
     try {

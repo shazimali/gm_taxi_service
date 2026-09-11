@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { prisma } from '@/lib/prisma';
 import { getCurrentPassenger } from '@/lib/auth';
 import { vehicleRepository, corporateAccountRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services/PricingService';
@@ -132,7 +133,30 @@ export async function POST(req: Request) {
       paymentIntentOptions.off_session = true;
     }
 
-    const paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
+    } catch (stripeErr: any) {
+      // The stored Stripe customer ID doesn't exist in this Stripe account/mode
+      // (e.g. left over from a different environment or key) — clear it and
+      // retry as a fresh, uncaptured card intent instead of failing the booking.
+      if (stripeErr?.code === 'resource_missing' && stripeErr?.param === 'customer') {
+        console.warn(
+          `[CreatePaymentIntent] Stale Stripe customer ${passenger.stripeCustomerId} for passenger ${passenger.id} — retrying without it.`
+        );
+        await prisma.passenger.update({
+          where: { id: passenger.id },
+          data: { stripeCustomerId: null },
+        });
+        delete paymentIntentOptions.customer;
+        delete paymentIntentOptions.payment_method;
+        delete paymentIntentOptions.confirm;
+        delete paymentIntentOptions.off_session;
+        paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
+      } else {
+        throw stripeErr;
+      }
+    }
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
