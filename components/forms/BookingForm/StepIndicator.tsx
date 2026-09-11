@@ -6,6 +6,8 @@ interface StepIndicatorProps {
   step: number;
 }
 
+
+
 export const StepIndicator: React.FC<StepIndicatorProps> = ({ step }) => {
   return (
     <div
