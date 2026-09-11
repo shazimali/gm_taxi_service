@@ -28,6 +28,13 @@ export class PrismaBookingRepository implements IBookingRepository {
     return (booking as unknown as Booking) ?? null;
   }
 
+  async findByCheckoutSessionId(stripeCheckoutSessionId: string): Promise<Booking | null> {
+    const booking = await prisma.booking.findUnique({
+      where: { stripeCheckoutSessionId },
+    });
+    return (booking as unknown as Booking) ?? null;
+  }
+
   async findAll(options?: {
     status?: BookingStatus;
     email?: string;
@@ -74,8 +81,14 @@ export class PrismaBookingRepository implements IBookingRepository {
         specialRequests: data.specialRequests ?? null,
         passengerId: data.passengerId ?? null,
         stripePaymentIntentId: data.stripePaymentIntentId ?? null,
+        stripeCheckoutSessionId: data.stripeCheckoutSessionId ?? null,
         paymentStatus: data.paymentStatus ?? 'PENDING',
         estimatedPrice: data.estimatedPrice ?? null,
+        fareMode: data.fareMode ?? null,
+        discountApplied: data.discountApplied ?? null,
+        corporateAccountId: data.corporateAccountId ?? null,
+        tipPercent: data.tipPercent ?? null,
+        tipAmount: data.tipAmount ?? null,
       },
     });
     return booking as unknown as Booking;

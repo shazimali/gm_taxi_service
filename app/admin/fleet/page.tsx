@@ -14,6 +14,11 @@ interface Vehicle {
   passengerCapacity: number;
   luggageCapacity: number;
   rateHourly: number | null;
+  minHours?: number;
+  ratePerMile?: number | null;
+  ratePerMinute?: number | null;
+  baseFee?: number | null;
+  minimumTripFee?: number;
   description: string;
   features: string[] | unknown;
   amenities: string[] | unknown;
@@ -30,6 +35,11 @@ const DEFAULT_FORM = {
   passengerCapacity: 4,
   luggageCapacity: 3,
   rateHourly: 100,
+  minHours: 2,
+  ratePerMile: 3.5,
+  ratePerMinute: 0.65,
+  baseFee: 15,
+  minimumTripFee: 65,
   description: '',
   features: '',   // comma-separated in the form
   amenities: '',  // comma-separated in the form
@@ -70,6 +80,11 @@ export default function FleetAdminPage() {
         passengerCapacity: v.passengerCapacity,
         luggageCapacity: v.luggageCapacity,
         rateHourly: v.rateHourly ?? 100,
+        minHours: v.minHours ?? 2,
+        ratePerMile: v.ratePerMile ?? 3.5,
+        ratePerMinute: v.ratePerMinute ?? 0.65,
+        baseFee: v.baseFee ?? 15,
+        minimumTripFee: v.minimumTripFee ?? 65,
         description: v.description || '',
         features: Array.isArray(v.features) ? (v.features as string[]).join(', ') : '',
         amenities: Array.isArray(v.amenities) ? (v.amenities as string[]).join(', ') : '',
@@ -265,6 +280,66 @@ export default function FleetAdminPage() {
                     value={f.rateHourly}
                     onChange={(e) => set('rateHourly', parseFloat(e.target.value) || 0)}
                   />
+                </div>
+              </div>
+
+              {/* Pricing Engine Calculation Parameters */}
+              <div style={{ padding: '0.85rem', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Pricing Engine Parameters
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div>
+                    <label className="admin-form__label">Min. Hours (Hourly)</label>
+                    <input
+                      type="number"
+                      className="admin-form__input"
+                      value={f.minHours}
+                      onChange={(e) => set('minHours', parseInt(e.target.value) || 2)}
+                    />
+                  </div>
+                  <div>
+                    <label className="admin-form__label">Rate / Mile ($/mi)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="admin-form__input"
+                      value={f.ratePerMile}
+                      onChange={(e) => set('ratePerMile', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <label className="admin-form__label">Rate / Min ($/min)</label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      className="admin-form__input"
+                      value={f.ratePerMinute}
+                      onChange={(e) => set('ratePerMinute', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label className="admin-form__label">Base Fee (Metered $)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      className="admin-form__input"
+                      value={f.baseFee}
+                      onChange={(e) => set('baseFee', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <label className="admin-form__label">Min. Trip Floor ($)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      className="admin-form__input"
+                      value={f.minimumTripFee}
+                      onChange={(e) => set('minimumTripFee', parseFloat(e.target.value) || 65)}
+                    />
+                  </div>
                 </div>
               </div>
 

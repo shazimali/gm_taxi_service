@@ -32,8 +32,14 @@ export interface Booking {
   status: BookingStatus;
   passengerId: string | null;
   stripePaymentIntentId: string | null;
+  stripeCheckoutSessionId?: string | null;
   paymentStatus: string;
   estimatedPrice: number | null;
+  fareMode?: string | null;
+  discountApplied?: number | null;
+  corporateAccountId?: string | null;
+  tipPercent?: number | null;
+  tipAmount?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,8 +61,14 @@ export interface CreateBookingData {
   specialRequests?: string | null;
   passengerId?: string | null;
   stripePaymentIntentId?: string | null;
+  stripeCheckoutSessionId?: string | null;
   paymentStatus?: string;
   estimatedPrice?: number | null;
+  fareMode?: string | null;
+  discountApplied?: number | null;
+  corporateAccountId?: string | null;
+  tipPercent?: number | null;
+  tipAmount?: number | null;
 }
 
 export interface IBookingRepository {
@@ -65,6 +77,9 @@ export interface IBookingRepository {
 
   /** Find a booking by confirmation number */
   findByConfirmationNumber(confirmationNumber: string): Promise<Booking | null>;
+
+  /** Find a booking by Stripe Checkout Session ID */
+  findByCheckoutSessionId(sessionId: string): Promise<Booking | null>;
 
   /** List all bookings (admin) — most recent first */
   findAll(options?: { status?: BookingStatus; email?: string; limit?: number; offset?: number }): Promise<Booking[]>;

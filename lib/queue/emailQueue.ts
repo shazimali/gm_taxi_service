@@ -12,13 +12,15 @@ export async function enqueueEmail(jobName: 'WELCOME_EMAIL' | 'BOOKING_CONFIRMAT
 
     switch (jobName) {
       case 'WELCOME_EMAIL': {
-        const { passengerName, email } = data;
-        const html = renderWelcomeEmailHtml(passengerName, email);
+        const { passengerName, email, tempPassword } = data;
+        const html = renderWelcomeEmailHtml(passengerName, email, tempPassword);
 
         await transporter.sendMail({
           from: `"GM Limo Services" <${process.env.SMTP_FROM || 'info@bostonluxurychauffeur.com'}>`,
           to: email,
-          subject: 'Welcome to GM Limo Services Boston!',
+          subject: tempPassword
+            ? 'Your GM Limo Account Credentials & Welcome to GM Limo Services'
+            : 'Welcome to GM Limo Services Boston!',
           html,
         });
 

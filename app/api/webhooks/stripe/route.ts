@@ -33,6 +33,66 @@ export async function POST(req: Request) {
 
   try {
     switch (event.type) {
+      // 🚀 0. Stripe Hosted Checkout Completed (Customer Authorized Card Hold)
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const bookingId = session.metadata?.bookingId;
+        const isNewPassenger = session.metadata?.isNewPassenger === 'true';
+        const tempPassword = session.metadata?.tempPassword;
+        const paymentIntentId =
+          typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : session.payment_intent?.id;
+
+        const booking = await prisma.booking.findFirst({
+          where: bookingId ? { id: bookingId } : { stripeCheckoutSessionId: session.id },
+        });
+
+        if (booking) {
+          await prisma.booking.update({
+            where: { id: booking.id },
+            data: {
+              paymentStatus: 'HOLD_PLACED',
+              status: 'CONFIRMED',
+              stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
+            },
+          });
+
+          // 1. Send Booking Confirmation Email to passenger & dispatch
+          const { enqueueEmail } = await import('@/lib/queue/emailQueue');
+          await enqueueEmail('BOOKING_CONFIRMATION_EMAIL', {
+            booking: {
+              confirmationNumber: booking.confirmationNumber,
+              fullName: booking.fullName,
+              email: booking.email,
+              phone: booking.phone,
+              serviceType: booking.serviceType,
+              vehicleSlug: booking.vehicleSlug,
+              pickupLocation: booking.pickupLocation,
+              dropoffLocation: booking.dropoffLocation,
+              pickupDate: booking.pickupDate,
+              pickupTime: booking.pickupTime,
+              passengers: booking.passengers,
+              luggage: booking.luggage,
+              flightNumber: booking.flightNumber,
+              estimatedPrice: booking.estimatedPrice,
+            },
+          });
+
+          // 2. If new passenger auto-registered, send Welcome Email with temporary password
+          if (isNewPassenger && tempPassword) {
+            await enqueueEmail('WELCOME_EMAIL', {
+              passengerName: booking.fullName,
+              email: booking.email,
+              tempPassword,
+            });
+          }
+
+          console.log(`[Stripe Webhook] Checkout completed for booking #${booking.confirmationNumber}`);
+        }
+        break;
+      }
+
       // 🔒 1. Pre-Authorization Hold Successfully Placed on Card
       case 'payment_intent.amount_capturable_updated': {
         if (paymentIntent?.id) {

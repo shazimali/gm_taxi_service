@@ -14,12 +14,27 @@ export interface Vehicle {
   passengerCapacity: number;
   luggageCapacity: number;
   rateHourly: number | null;
+  minHours: number;
+  ratePerMile: number | null;
+  ratePerMinute: number | null;
+  baseFee: number | null;
+  minimumTripFee: number;
   description: string | null;
   image: string | null;
   features: string | null; // JSON-serialised string[]
   displayOrder: number;
   createdAt: Date;
   updatedAt: Date;
+  zoneRoutes?: Array<{
+    id: string;
+    vehicleId: string;
+    name: string;
+    pickupKeywords: string;
+    dropoffKeywords: string;
+    flatRate: number;
+    isActive: boolean;
+    displayOrder: number;
+  }>;
 }
 
 export interface CreateVehicleData {
@@ -30,6 +45,11 @@ export interface CreateVehicleData {
   passengerCapacity?: number;
   luggageCapacity?: number;
   rateHourly?: number | null;
+  minHours?: number;
+  ratePerMile?: number | null;
+  ratePerMinute?: number | null;
+  baseFee?: number | null;
+  minimumTripFee?: number;
   description?: string | null;
   image?: string | null;
   features?: string | null;

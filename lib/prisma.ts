@@ -51,12 +51,15 @@ function getFreshClient(): PrismaClient {
 
 let activeClient = getFreshClient();
 
-export const prisma = new Proxy(activeClient as any, {
-  get(target, prop, receiver) {
-    const value = Reflect.get(target, prop, receiver);
-    if (typeof prop === 'string' && ['passenger', 'booking', 'admin', 'vehicle', 'service', 'siteSetting'].includes(prop) && !value) {
+export const prisma = new Proxy({} as any, {
+  get(_target, prop) {
+    let value = (activeClient as any)[prop];
+    if (typeof prop === 'string' && !value && !prop.startsWith('$') && !prop.startsWith('_')) {
       activeClient = getFreshClient();
-      return (activeClient as any)[prop];
+      value = (activeClient as any)[prop];
+    }
+    if (typeof value === 'function') {
+      return value.bind(activeClient);
     }
     return value;
   },

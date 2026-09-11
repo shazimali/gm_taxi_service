@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Navigation } from 'lucide-react';
 
 interface RouteMapPreviewProps {
   pickup: string;
@@ -16,14 +15,19 @@ export const RouteMapPreview: React.FC<RouteMapPreviewProps> = ({
   estimatedMiles,
   estimatedMinutes,
 }) => {
-  const mapOrigin = encodeURIComponent(pickup || 'Boston Logan Airport');
-  const mapDestination = encodeURIComponent(dropoff || 'Boston MA');
-
-  // Use Google Maps Embed API "directions" mode to show the actual driving route line
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-  const googleMapEmbedUrl = apiKey
-    ? `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(apiKey)}&origin=${mapOrigin}&destination=${mapDestination}&mode=driving`
-    : `https://maps.google.com/maps?q=from+${mapOrigin}+to+${mapDestination}&output=embed`;
+  const hasRoute = Boolean(pickup && dropoff);
+  const singleLocation = pickup || dropoff;
+
+  // Google Maps Embed API "directions" mode draws the route / distance line between origin and destination.
+  // Fall back to "place" mode (single pin, no line) when only one location is set.
+  const googleMapEmbedUrl = hasRoute
+    ? apiKey
+      ? `https://www.google.com/maps/embed/v1/directions?key=${encodeURIComponent(apiKey)}&origin=${encodeURIComponent(pickup)}&destination=${encodeURIComponent(dropoff)}&mode=driving`
+      : `https://maps.google.com/maps?saddr=${encodeURIComponent(pickup)}&daddr=${encodeURIComponent(dropoff)}&output=embed`
+    : apiKey
+      ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(apiKey)}&q=${encodeURIComponent(singleLocation || 'Boston, MA')}`
+      : `https://maps.google.com/maps?q=${encodeURIComponent(singleLocation || 'Boston, MA')}&output=embed`;
 
   // Format duration: show hours + minutes when >= 60
   const formattedDuration =
@@ -63,23 +67,12 @@ export const RouteMapPreview: React.FC<RouteMapPreviewProps> = ({
             letterSpacing: '0.05em',
           }}
         >
-          <Navigation size={18} />
-          <span>Google Map Route &amp; Distance Matrix</span>
-        </div>
-
-        <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.85rem', color: '#334155' }}>
-          <span>
-            Distance: <strong style={{ color: '#b8860b', fontWeight: 800 }}>{estimatedMiles} Miles</strong>
-          </span>
-          <span>
-            Duration: <strong style={{ color: '#b8860b', fontWeight: 800 }}>{formattedDuration}</strong>
-          </span>
         </div>
       </div>
 
       <div
         style={{
-          height: '200px',
+          height: '210px',
           borderRadius: '12px',
           overflow: 'hidden',
           border: '1px solid #cbd5e1',
@@ -92,7 +85,7 @@ export const RouteMapPreview: React.FC<RouteMapPreviewProps> = ({
           style={{ border: 0 }}
           allowFullScreen
           loading="lazy"
-          title="Google Route Preview"
+          title="Location Map Preview"
         ></iframe>
       </div>
     </div>

@@ -1,5 +1,25 @@
 import type { NextConfig } from "next";
 
+// Content-Security-Policy: no-nonce variant, so static rendering/ISR stay intact.
+// 'unsafe-inline' is required for script/style-src because the app renders
+// inline JSON-LD (app/layout.tsx) and inline styles throughout — tightening
+// further would require a nonce-based CSP generated in proxy.ts, which forces
+// every page to dynamic rendering.
+const cspHeader = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://js.stripe.com;
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' blob: data: https://maps.gstatic.com https://maps.googleapis.com https://*.stripe.com;
+  font-src 'self' data:;
+  connect-src 'self' https://maps.googleapis.com https://routes.googleapis.com https://nominatim.openstreetmap.org https://api.stripe.com;
+  frame-src https://js.stripe.com https://hooks.stripe.com https://www.google.com https://maps.google.com;
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  frame-ancestors 'none';
+  upgrade-insecure-requests;
+`.replace(/\s{2,}/g, ' ').trim();
+
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
@@ -33,6 +53,10 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(self)',
           },
+          {
+            key: 'Content-Security-Policy',
+            value: cspHeader,
+          },
         ],
       },
     ];
@@ -40,5 +64,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-// Server bundle reloaded
-
+// Server config updated at 2026-09-10T21:01:00

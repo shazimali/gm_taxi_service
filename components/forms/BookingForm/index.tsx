@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import { sendBookingQuote } from '@/lib/actions/sendBookingQuote';
+import React, { useState, useEffect } from 'react';
 import { useLocationSearch } from './hooks/useLocationSearch';
 import { usePassengerAuth } from './hooks/usePassengerAuth';
 import { useRoutePricing } from './hooks/useRoutePricing';
@@ -11,11 +10,19 @@ import { VehicleStep } from './VehicleStep';
 import { ConfirmStep } from './ConfirmStep';
 import { SuccessView } from './SuccessView';
 import type { BookingSubmissionStatus } from './types';
+import { AlertCircle, Info } from 'lucide-react';
 
 export default function BookingForm() {
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<BookingSubmissionStatus>({});
   const [loading, setLoading] = useState(false);
+  const [cancelledNotice, setCancelledNotice] = useState(false);
+
+  // Guest Contact Information (Collected in Step 1)
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [specialRequests, setSpecialRequests] = useState('');
 
   // 1. Location search state & handlers
   const location = useLocationSearch();
@@ -23,79 +30,80 @@ export default function BookingForm() {
   // 2. Route & Vehicle pricing state & handlers
   const pricing = useRoutePricing(location.pickup, location.dropoff);
 
-  // 3. Passenger auth & cards state & handlers
+  // 3. Passenger auth state & handlers (used to prefill if logged in)
   const auth = usePassengerAuth();
 
-  // Handle Reservation & Pre-Authorization Hold Submission
-  const handleFinalSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!auth.passenger) {
-      alert('Please log in or register as a passenger before confirming your reservation.');
+  // Prefill contact if user is already logged in as a passenger
+  useEffect(() => {
+    if (auth.passenger) {
+      if (!fullName && auth.passenger.fullName) setFullName(auth.passenger.fullName);
+      if (!email && auth.passenger.email) setEmail(auth.passenger.email);
+      if (!phone && auth.passenger.phone) setPhone(auth.passenger.phone);
+    }
+  }, [auth.passenger]);
+
+  // Check if returning from a cancelled Stripe Checkout
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('cancelled') === '1') {
+        setCancelledNotice(true);
+      }
+    }
+  }, []);
+
+  // Handle Frictionless Stripe Checkout Redirection
+  const handleCheckoutRedirect = async () => {
+    if (!fullName.trim() || !email.trim()) {
+      setStatus({ error: 'Please provide your Full Name and Email.' });
       return;
     }
 
     setLoading(true);
     setStatus({});
 
-    const formData = new FormData();
-    const serviceLabel = pricing.selectedService.includes('Hourly')
-      ? `${pricing.selectedService} (${pricing.hourlyCount} Hours)`
-      : pricing.selectedService;
-
-    formData.set('fullName', auth.passengerName || auth.passenger.fullName);
-    formData.set('email', auth.passengerEmail || auth.passenger.email);
-    formData.set('phone', auth.passengerPhone || auth.passenger.phone || '');
-    formData.set('serviceType', serviceLabel);
-    formData.set('vehicleSlug', pricing.selectedVehicle);
-    formData.set('pickupLocation', location.pickup);
-    formData.set('dropoffLocation', location.dropoff);
-    formData.set('pickupDate', pricing.pickupDate);
-    formData.set('pickupTime', pricing.pickupTime);
-    formData.set('passengers', pricing.passengers.toString());
-    formData.set('luggage', pricing.luggage.toString());
-    formData.set('flightNumber', pricing.flightNumber);
-    formData.set('estimatedPrice', pricing.currentVehiclePrice.totalPrice);
-
-    // Create Stripe Pre-Authorization Hold (manual capture)
     try {
-      const intentRes = await fetch('/api/create-payment-intent', {
+      const res = await fetch('/api/checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          fullName,
+          email,
+          phone,
           serviceType: pricing.selectedService,
           vehicleSlug: pricing.selectedVehicle,
-          estimatedMinutes: pricing.estimatedMinutes,
-          hourlyCount: pricing.hourlyCount,
           pickupLocation: location.pickup,
           dropoffLocation: location.dropoff,
-          paymentMethodId: auth.selectedCardId !== 'new' ? auth.selectedCardId : undefined,
+          pickupDate: pricing.pickupDate,
+          pickupTime: pricing.pickupTime,
+          passengers: pricing.passengers,
+          luggage: pricing.luggage,
+          flightNumber: pricing.flightNumber,
+          specialRequests,
+          estimatedMinutes: pricing.estimatedMinutes,
+          estimatedMiles: pricing.estimatedMiles,
+          hourlyCount: pricing.hourlyCount,
+          corporateAccountCode: pricing.corporateAccountCode || undefined,
+          tipPercent: pricing.tipPercent,
+          tipAmount: pricing.tipAmount,
         }),
       });
 
-      if (intentRes.ok) {
-        const intentData = await intentRes.json();
-        if (intentData.paymentIntentId) {
-          formData.set('stripePaymentIntentId', intentData.paymentIntentId);
-          formData.set('paymentStatus', 'HOLD_PLACED');
-        }
-        if (intentData.calculatedPrice) {
-          formData.set('estimatedPrice', intentData.calculatedPrice);
-        }
+      const data = await res.json();
+
+      if (!res.ok || !data.checkoutUrl) {
+        setStatus({ error: data.error || 'Failed to start Stripe checkout session. Please try again.' });
+        setLoading(false);
+        return;
       }
-    } catch (holdErr) {
-      console.warn('Payment hold creation warning:', holdErr);
+
+      // Redirect customer to Stripe hosted checkout page
+      window.location.href = data.checkoutUrl;
+    } catch (err: any) {
+      console.error('Checkout redirection error:', err);
+      setStatus({ error: 'Connection error while contacting payment gateway. Please try again.' });
+      setLoading(false);
     }
-
-    const calcNotes = `Calculated Distance: ${pricing.estimatedMiles} miles | Duration: ${pricing.estimatedMinutes} mins | System Estimated Price: $${pricing.currentVehiclePrice.totalPrice}`;
-    formData.set(
-      'specialRequests',
-      auth.specialRequests ? `${auth.specialRequests} [${calcNotes}]` : calcNotes
-    );
-
-    const result = await sendBookingQuote({}, formData);
-
-    setLoading(false);
-    setStatus(result);
   };
 
   const handleReset = () => {
@@ -109,12 +117,35 @@ export default function BookingForm() {
       {/* Step Indicator Bar */}
       <StepIndicator step={step} />
 
+      {/* Notice if returning from cancelled Stripe Checkout */}
+      {cancelledNotice && (
+        <div
+          style={{
+            backgroundColor: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            color: '#1e40af',
+            borderRadius: '10px',
+            padding: '0.85rem 1.15rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+            fontSize: '0.85rem',
+          }}
+        >
+          <Info size={18} color="#2563eb" style={{ flexShrink: 0 }} />
+          <span>
+            Payment was not completed. Your trip details have been preserved below whenever you are ready.
+          </span>
+        </div>
+      )}
+
       {status.success ? (
         <SuccessView
           status={status}
           currentVehiclePrice={pricing.currentVehiclePrice}
           passenger={auth.passenger}
-          passengerName={auth.passengerName}
+          passengerName={fullName || auth.passengerName}
           selectedService={pricing.selectedService}
           chosenVehicleObj={pricing.chosenVehicleObj}
           pickup={location.pickup}
@@ -125,7 +156,7 @@ export default function BookingForm() {
         />
       ) : (
         <div className="theme-form">
-          {/* Step 1: Service & Route */}
+          {/* Step 1: Service & Route + Guest Contact */}
           {step === 1 && (
             <ServiceStep
               selectedService={pricing.selectedService}
@@ -165,6 +196,12 @@ export default function BookingForm() {
               setPassengers={pricing.setPassengers}
               luggage={pricing.luggage}
               setLuggage={pricing.setLuggage}
+              fullName={fullName}
+              setFullName={setFullName}
+              email={email}
+              setEmail={setEmail}
+              phone={phone}
+              setPhone={setPhone}
               onNext={() => {
                 location.setPickupFinalized(true);
                 location.setDropoffFinalized(true);
@@ -189,54 +226,37 @@ export default function BookingForm() {
             />
           )}
 
-          {/* Step 3: Passenger Auth & Confirmation */}
+          {/* Step 3: Review, Tip & Stripe Hosted Checkout */}
           {step === 3 && (
             <ConfirmStep
-              passenger={auth.passenger}
               selectedService={pricing.selectedService}
               chosenVehicleObj={pricing.chosenVehicleObj}
               estimatedMiles={pricing.estimatedMiles}
               estimatedMinutes={pricing.estimatedMinutes}
               currentVehiclePrice={pricing.currentVehiclePrice}
-              authMode={auth.authMode}
-              setAuthMode={auth.setAuthMode}
-              authError={auth.authError}
-              setAuthError={auth.setAuthError}
-              authLoading={auth.authLoading}
-              loginEmail={auth.loginEmail}
-              setLoginEmail={auth.setLoginEmail}
-              loginPassword={auth.loginPassword}
-              setLoginPassword={auth.setLoginPassword}
-              regFullName={auth.regFullName}
-              setRegFullName={auth.setRegFullName}
-              regEmail={auth.regEmail}
-              setRegEmail={auth.setRegEmail}
-              regPassword={auth.regPassword}
-              setRegPassword={auth.setRegPassword}
-              regPhone={auth.regPhone}
-              setRegPhone={auth.setRegPhone}
-              passengerName={auth.passengerName}
-              setPassengerName={auth.setPassengerName}
-              passengerEmail={auth.passengerEmail}
-              setPassengerEmail={auth.setPassengerEmail}
-              passengerPhone={auth.passengerPhone}
-              setPassengerPhone={auth.setPassengerPhone}
-              specialRequests={auth.specialRequests}
-              setSpecialRequests={auth.setSpecialRequests}
-              savedCards={auth.savedCards}
-              selectedCardId={auth.selectedCardId}
-              setSelectedCardId={auth.setSelectedCardId}
-              newCardNumber={auth.newCardNumber}
-              setNewCardNumber={auth.setNewCardNumber}
-              newCardExp={auth.newCardExp}
-              setNewCardExp={auth.setNewCardExp}
-              newCardCvc={auth.newCardCvc}
-              setNewCardCvc={auth.setNewCardCvc}
+              fullName={fullName}
+              email={email}
+              phone={phone}
+              specialRequests={specialRequests}
+              setSpecialRequests={setSpecialRequests}
+              // Corporate discount (Step 2)
+              corporateAccountCode={pricing.corporateAccountCode}
+              setCorporateAccountCode={pricing.setCorporateAccountCode}
+              corporateAccount={pricing.corporateAccount}
+              corporateLoading={pricing.corporateLoading}
+              corporateError={pricing.corporateError}
+              applyCorporateCode={pricing.applyCorporateCode}
+              removeCorporateCode={pricing.removeCorporateCode}
+              // Tip (Step 3) & Final Total (Step 4)
+              tipPercent={pricing.tipPercent}
+              setTipPercent={pricing.setTipPercent}
+              customTipAmount={pricing.customTipAmount}
+              setCustomTipAmount={pricing.setCustomTipAmount}
+              tipAmount={pricing.tipAmount}
+              totalWithTip={pricing.totalWithTip}
               status={status}
               loading={loading}
-              onPassengerLogin={auth.handlePassengerLogin}
-              onPassengerRegister={auth.handlePassengerRegister}
-              onSubmitReservation={handleFinalSubmit}
+              onSubmitCheckout={handleCheckoutRedirect}
               onBack={() => setStep(2)}
             />
           )}

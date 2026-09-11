@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Crosshair, Loader2, MapPin } from 'lucide-react';
+import { ArrowRight, Loader2, LocateFixed, MapPin } from 'lucide-react';
 import { RouteMapPreview } from './RouteMapPreview';
 
 interface ServiceStepProps {
@@ -42,6 +42,12 @@ interface ServiceStepProps {
   setPassengers: (val: number) => void;
   luggage: number;
   setLuggage: (val: number) => void;
+  fullName: string;
+  setFullName: (val: string) => void;
+  email: string;
+  setEmail: (val: string) => void;
+  phone: string;
+  setPhone: (val: string) => void;
   onNext: () => void;
 }
 
@@ -81,6 +87,12 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
   setPassengers,
   luggage,
   setLuggage,
+  fullName,
+  setFullName,
+  email,
+  setEmail,
+  phone,
+  setPhone,
   onNext,
 }) => {
   return (
@@ -120,39 +132,8 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
       <div className="form-row">
         {/* Pickup Location Field */}
         <div className="form-group" style={{ position: 'relative' }} ref={pickupContainerRef}>
-          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-            <span>Pickup Location <span className="req">*</span></span>
-            {/* GPS Current Location Button */}
-            <button
-              type="button"
-              id="detect-pickup-location-btn"
-              onClick={detectCurrentPickupLocation}
-              disabled={detectingPickupLocation}
-              title="Detect my current location"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                fontSize: '0.73rem',
-                fontWeight: 600,
-                color: detectingPickupLocation ? '#94a3b8' : '#b8860b',
-                background: 'none',
-                border: '1px solid currentColor',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                cursor: detectingPickupLocation ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap',
-                letterSpacing: '0.02em',
-              }}
-            >
-              {detectingPickupLocation ? (
-                <Loader2 size={11} className="animate-spin" />
-              ) : (
-                <Crosshair size={11} />
-              )}
-              {detectingPickupLocation ? 'Detecting…' : 'Use My Location'}
-            </button>
+          <label className="form-label">
+            Pickup Location <span className="req">*</span>
           </label>
           <div style={{ position: 'relative' }}>
             <input
@@ -170,21 +151,52 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
               }}
               placeholder="Type location, airport, or hotel name..."
               className="form-input"
-              style={{ paddingRight: '2.5rem' }}
+              style={{ paddingRight: '2.6rem' }}
             />
-            {loadingPickup && (
-              <Loader2
-                size={16}
-                className="animate-spin"
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#c5a46d',
-                }}
-              />
-            )}
+            {/* Small icon button for Use My Location */}
+            <button
+              type="button"
+              id="detect-pickup-location-btn"
+              onClick={detectCurrentPickupLocation}
+              disabled={detectingPickupLocation}
+              title="Use my current location"
+              aria-label="Use my current location"
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '30px',
+                height: '30px',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: detectingPickupLocation ? 'rgba(184, 134, 11, 0.12)' : 'transparent',
+                color: detectingPickupLocation ? '#b8860b' : '#64748b',
+                cursor: detectingPickupLocation ? 'wait' : 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!detectingPickupLocation) {
+                  e.currentTarget.style.color = '#b8860b';
+                  e.currentTarget.style.backgroundColor = 'rgba(184, 134, 11, 0.12)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!detectingPickupLocation) {
+                  e.currentTarget.style.color = '#64748b';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              {detectingPickupLocation || loadingPickup ? (
+                <Loader2 size={16} className="animate-spin" style={{ color: '#b8860b' }} />
+              ) : (
+                <LocateFixed size={16} />
+              )}
+            </button>
           </div>
 
           {/* Pickup Live Search Dropdown */}
@@ -423,11 +435,89 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
         </div>
       </div>
 
+      {/* Contact & Confirmation Details */}
+      <div
+        style={{
+          marginTop: '0.5rem',
+          paddingTop: '1.15rem',
+          borderTop: '1px solid #e2e8f0',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '0.85rem',
+            fontWeight: 800,
+            color: '#0f172a',
+            marginBottom: '0.85rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}
+        >
+          <span>Passenger Contact for Live Dispatch &amp; Confirmation</span>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">
+              Full Name <span className="req">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="e.g. John Doe"
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              Email Address <span className="req">*</span>
+            </label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="e.g. john@example.com"
+              className="form-input"
+            />
+          </div>
+        </div>
+
+        <div className="form-row" style={{ marginTop: '0.5rem' }}>
+          <div className="form-group" style={{ flex: 1 }}>
+            <label className="form-label">
+              Mobile Phone Number <span style={{ fontSize: '0.75rem', color: '#64748b' }}>(For chauffeur arrival SMS)</span>
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. (617) 784-0264"
+              className="form-input"
+            />
+          </div>
+        </div>
+      </div>
+
       <button
         type="button"
         onClick={() => {
-          if (!pickup || !dropoff || !pickupDate) {
-            alert('Please provide Pickup (Start Point), Drop-off (Destination) and Transfer Date.');
+          if (!pickup || !dropoff || !pickupDate || !pickupTime) {
+            alert('Please provide Pickup location, Drop-off destination, Transfer Date, and Pickup Time.');
+            return;
+          }
+          if (!fullName || !fullName.trim()) {
+            alert('Please provide your Full Name.');
+            return;
+          }
+          if (!email || !email.trim() || !email.includes('@')) {
+            alert('Please provide a valid Email Address for your booking confirmation.');
             return;
           }
           onNext();

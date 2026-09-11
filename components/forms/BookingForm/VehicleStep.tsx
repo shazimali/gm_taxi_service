@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
-import { ArrowRight } from 'lucide-react';
 import { FLEET_DATA } from '@/data/fleetData';
 import type { PriceCalculationResult } from '@/lib/services';
+import { ArrowRight } from 'lucide-react';
+import React from 'react';
 
 interface VehicleStepProps {
   selectedVehicle: string;
@@ -12,7 +12,7 @@ interface VehicleStepProps {
   dropoff: string;
   estimatedMiles: number;
   estimatedMinutes: number;
-  calculateVehiclePrice: (vehicle: (typeof FLEET_DATA)[0]) => PriceCalculationResult;
+  calculateVehiclePrice?: (vehicle: (typeof FLEET_DATA)[0]) => PriceCalculationResult;
   currentVehiclePrice: PriceCalculationResult;
   onBack: () => void;
   onNext: () => void;
@@ -25,11 +25,13 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
   dropoff,
   estimatedMiles,
   estimatedMinutes,
-  calculateVehiclePrice,
   currentVehiclePrice,
   onBack,
   onNext,
 }) => {
+  const chosenVehicle =
+    FLEET_DATA.find((v) => v.slug === selectedVehicle) || FLEET_DATA[0];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div
@@ -42,11 +44,10 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
       >
         <div>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-            Select Vehicle &amp; System Calculated Price
+            Select Vehicle Fleet Tier
           </h3>
           <p style={{ fontSize: '0.825rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
-            Calculated for {estimatedMiles} miles / {estimatedMinutes} mins route from {pickup} to{' '}
-            {dropoff}
+            Choose your preferred luxury vehicle for the journey
           </p>
         </div>
 
@@ -72,7 +73,6 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
       >
         {FLEET_DATA.map((vehicle) => {
           const isSelected = selectedVehicle === vehicle.slug;
-          const priceInfo = calculateVehiclePrice(vehicle);
 
           return (
             <div
@@ -104,26 +104,6 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
 
-                {/* Calculated Price Badge */}
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    backgroundColor: 'rgba(11, 15, 23, 0.92)',
-                    color: '#c5a46d',
-                    border: '1px solid rgba(197, 164, 109, 0.5)',
-                    fontSize: '0.85rem',
-                    fontWeight: 800,
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: '20px',
-                    backdropFilter: 'blur(6px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                  }}
-                >
-                  ${priceInfo.totalPrice}
-                </span>
-
                 {isSelected && (
                   <span
                     style={{
@@ -137,6 +117,7 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
                       padding: '0.2rem 0.6rem',
                       borderRadius: '20px',
                       textTransform: 'uppercase',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                     }}
                   >
                     ✓ Selected
@@ -163,9 +144,6 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
                     }}
                   >
                     {vehicle.category}
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
-                    {priceInfo.formulaLabel}
                   </span>
                 </div>
 
@@ -203,13 +181,58 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+      {/* Selected Vehicle & Calculated Fare Summary Banner */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid rgba(197, 164, 109, 0.35)',
+          borderRadius: '12px',
+          padding: '0.85rem 1.25rem',
+          marginTop: '0.25rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div
+            style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              backgroundColor: '#c5a46d',
+              boxShadow: '0 0 10px #c5a46d',
+              flexShrink: 0,
+            }}
+          />
+          <div>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>
+              Selected Fleet:
+            </span>
+            <strong style={{ fontSize: '0.95rem' }}>
+              {chosenVehicle?.name} <span style={{ color: '#c5a46d', fontWeight: 600 }}>({chosenVehicle?.category})</span>
+            </strong>
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>
+            Calculated Fare:
+          </span>
+          <strong style={{ fontSize: '1.25rem', color: '#c5a46d', fontWeight: 900 }}>
+            ${(currentVehiclePrice.fareAfterDiscount ?? currentVehiclePrice.baseFare ?? currentVehiclePrice.totalPrice).toFixed(2)}
+          </strong>
+        </div>
+      </div>
+
+      {/* Navigation Buttons */}
+      <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
         <button
           type="button"
           onClick={onBack}
           style={{
             flex: 1,
-            height: '50px',
+            height: '52px',
             backgroundColor: 'rgba(255, 255, 255, 0.08)',
             border: '1px solid rgba(255, 255, 255, 0.15)',
             color: '#ffffff',
@@ -226,9 +249,11 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
           type="button"
           onClick={onNext}
           className="btn btn--gold"
-          style={{ flex: 2, height: '50px', fontSize: '0.9rem' }}
+          style={{ flex: 2, height: '52px', fontSize: '0.95rem' }}
         >
-          <span>Proceed to Payment Hold (${currentVehiclePrice.totalPrice})</span>
+          <span>
+            Proceed with {chosenVehicle?.name} — ${(currentVehiclePrice.fareAfterDiscount ?? currentVehiclePrice.baseFare ?? currentVehiclePrice.totalPrice).toFixed(2)}
+          </span>
           <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
         </button>
       </div>

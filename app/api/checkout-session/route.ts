@@ -1,0 +1,325 @@
+import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
+import { stripe } from '@/lib/stripe';
+import { signPassengerToken } from '@/lib/auth';
+import {
+  vehicleRepository,
+  corporateAccountRepository,
+} from '@/lib/repositories';
+import {
+  pricingService,
+  type VehiclePricingConfig,
+} from '@/lib/services';
+
+export const dynamic = 'force-dynamic';
+
+const MIN_AMOUNT_USD = 10;
+const MAX_AMOUNT_USD = 50000;
+
+function normalizeServiceType(st?: string): 'hourly' | 'point-to-point' {
+  if (!st) return 'point-to-point';
+  const lower = st.toLowerCase();
+  if (lower.includes('hour')) return 'hourly';
+  return 'point-to-point';
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const {
+      fullName,
+      email,
+      phone,
+      serviceType = 'Airport Transportation',
+      vehicleSlug = 'executive-sedan',
+      pickupLocation,
+      dropoffLocation,
+      pickupDate,
+      pickupTime,
+      passengers = 1,
+      luggage = 1,
+      flightNumber,
+      specialRequests,
+      estimatedMinutes,
+      estimatedMiles,
+      hourlyCount,
+      corporateAccountCode,
+      tipPercent,
+      tipAmount = 0,
+    } = body;
+
+    // 1. Validate required basic fields
+    if (!fullName?.trim()) {
+      return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
+    }
+    if (!email?.trim() || !email.includes('@')) {
+      return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
+    }
+    if (!pickupLocation?.trim()) {
+      return NextResponse.json({ error: 'Pickup location is required.' }, { status: 400 });
+    }
+    if (!pickupDate?.trim() || !pickupTime?.trim()) {
+      return NextResponse.json({ error: 'Pickup date and time are required.' }, { status: 400 });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanPhone = phone ? phone.trim() : null;
+
+    // 2. Fetch vehicle & build pricing config (Server-Side Price Validation)
+    const targetSlug = vehicleSlug || 'executive-sedan';
+    const vehicle = await vehicleRepository.findBySlug(targetSlug);
+
+    const vehicleConfig: VehiclePricingConfig = {
+      rateHourly: vehicle?.rateHourly ?? 85,
+      minHours: vehicle?.minHours ?? 2,
+      ratePerMile: vehicle?.ratePerMile ?? 3.5,
+      ratePerMinute: vehicle?.ratePerMinute ?? 0.65,
+      baseFee: vehicle?.baseFee ?? 15,
+      minimumTripFee: vehicle?.minimumTripFee ?? 65,
+      zoneRoutes: (vehicle?.zoneRoutes || []).map((zr) => ({
+        id: zr.id,
+        name: zr.name,
+        pickupKeywords: zr.pickupKeywords
+          .split(',')
+          .map((k: string) => k.trim().toLowerCase())
+          .filter(Boolean),
+        dropoffKeywords: zr.dropoffKeywords
+          .split(',')
+          .map((k: string) => k.trim().toLowerCase())
+          .filter(Boolean),
+        flatRate: zr.flatRate,
+      })),
+    };
+
+    // 3. Corporate account verification if code provided
+    let corporateDiscountPct = 0;
+    let corporateAccountId: string | null = null;
+    if (corporateAccountCode?.trim()) {
+      const account = await corporateAccountRepository.findByCode(corporateAccountCode.trim());
+      if (account && account.isActive) {
+        corporateDiscountPct = account.discountPct;
+        corporateAccountId = account.id;
+      }
+    }
+
+    const parsedMinutes = Number(estimatedMinutes);
+    const parsedMiles = Number(estimatedMiles);
+    const parsedHours = Number(hourlyCount);
+
+    const priceCalc = pricingService.calculate({
+      serviceType: normalizeServiceType(serviceType),
+      vehicleConfig,
+      pickup: pickupLocation || '',
+      dropoff: dropoffLocation || '',
+      estimatedMinutes: !isNaN(parsedMinutes) && parsedMinutes > 0 ? parsedMinutes : 0,
+      estimatedMiles: !isNaN(parsedMiles) && parsedMiles > 0 ? parsedMiles : 0,
+      hourlyCount: !isNaN(parsedHours) && parsedHours > 0 ? parsedHours : 2,
+      corporateDiscountPct,
+    });
+
+    const parsedTip = Number(tipAmount) > 0 ? Number(tipAmount) : 0;
+    const finalTotal = Math.round((priceCalc.fareAfterDiscount + parsedTip) * 100) / 100;
+
+    if (finalTotal < MIN_AMOUNT_USD || finalTotal > MAX_AMOUNT_USD) {
+      return NextResponse.json(
+        { error: `Calculated total ($${finalTotal}) is outside allowed limits.` },
+        { status: 400 }
+      );
+    }
+
+    // 4. Auto-register or find passenger account
+    let passenger = await prisma.passenger.findUnique({
+      where: { email: cleanEmail },
+    });
+
+    let isNewPassenger = false;
+    let tempPlainPassword = '';
+
+    if (!passenger) {
+      isNewPassenger = true;
+      // Generate a strong, friendly temporary password
+      tempPlainPassword =
+        'GM-' +
+        Math.random().toString(36).substring(2, 7).toUpperCase() +
+        '!' +
+        Math.floor(100 + Math.random() * 900);
+
+      const passwordHash = await bcrypt.hash(tempPlainPassword, 10);
+
+      // Create Stripe Customer
+      let stripeCustomerId: string | null = null;
+      const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
+      if (stripeKey && stripeKey.startsWith('sk_')) {
+        try {
+          const customer = await stripe.customers.create({
+            email: cleanEmail,
+            name: fullName,
+            phone: cleanPhone || undefined,
+          });
+          stripeCustomerId = customer.id;
+        } catch (stripeErr: any) {
+          console.warn('Stripe customer creation warning:', stripeErr?.message);
+        }
+      }
+
+      passenger = await prisma.passenger.create({
+        data: {
+          fullName: fullName.trim(),
+          email: cleanEmail,
+          passwordHash,
+          phone: cleanPhone,
+          stripeCustomerId,
+        },
+      });
+    } else {
+      // Update phone or name if provided and missing
+      if (cleanPhone && !passenger.phone) {
+        passenger = await prisma.passenger.update({
+          where: { id: passenger.id },
+          data: { phone: cleanPhone },
+        });
+      }
+    }
+
+    // 5. Generate confirmation number & create pending Booking
+    const confirmationNumber = 'GML-' + Math.floor(100000 + Math.random() * 900000);
+    const serviceLabel = serviceType.includes('Hourly')
+      ? `${serviceType} (${hourlyCount || 2} Hours)`
+      : serviceType;
+
+    const booking = await prisma.booking.create({
+      data: {
+        confirmationNumber,
+        fullName: fullName.trim(),
+        email: cleanEmail,
+        phone: cleanPhone || passenger.phone || '',
+        serviceType: serviceLabel,
+        vehicleSlug: targetSlug,
+        pickupLocation: pickupLocation.trim(),
+        dropoffLocation: dropoffLocation?.trim() || null,
+        pickupDate: pickupDate.trim(),
+        pickupTime: pickupTime.trim(),
+        passengers: Number(passengers) || 1,
+        luggage: Number(luggage) || 1,
+        flightNumber: flightNumber?.trim() || null,
+        specialRequests: specialRequests?.trim() || null,
+        passengerId: passenger.id,
+        paymentStatus: 'CHECKOUT_PENDING',
+        status: 'PENDING',
+        estimatedPrice: finalTotal,
+        fareMode: priceCalc.fareMode,
+        discountApplied: priceCalc.discountAmount,
+        corporateAccountId,
+        tipPercent: tipPercent !== undefined && tipPercent !== null ? Number(tipPercent) : null,
+        tipAmount: parsedTip,
+      },
+    });
+
+    // 6. Build Stripe Checkout Session
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const origin = req.headers.get('origin') || (host ? `${protocol}://${host}` : 'http://localhost:3000');
+
+    const lineItems: any[] = [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `${serviceLabel} — ${vehicle?.name || 'Executive Fleet'}`,
+            description: `Pickup: ${pickupLocation} | Date: ${pickupDate} at ${pickupTime}${
+              dropoffLocation ? ` | Dropoff: ${dropoffLocation}` : ''
+            }`,
+          },
+          unit_amount: Math.round(priceCalc.fareAfterDiscount * 100),
+        },
+        quantity: 1,
+      },
+    ];
+
+    if (parsedTip > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Chauffeur Gratuity (Driver Tip)',
+            description: '100% directly allocated to your dedicated professional chauffeur',
+          },
+          unit_amount: Math.round(parsedTip * 100),
+        },
+        quantity: 1,
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_intent_data: {
+        capture_method: 'manual', // 🔒 Places pre-authorization hold on card!
+        metadata: {
+          bookingId: booking.id,
+          confirmationNumber: booking.confirmationNumber,
+          passengerId: passenger.id,
+        },
+      },
+      customer: passenger.stripeCustomerId || undefined,
+      customer_email: passenger.stripeCustomerId ? undefined : cleanEmail,
+      line_items: lineItems,
+      success_url: `${origin}/book/thank-you?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/book?cancelled=1`,
+      metadata: {
+        bookingId: booking.id,
+        confirmationNumber: booking.confirmationNumber,
+        passengerId: passenger.id,
+        isNewPassenger: isNewPassenger ? 'true' : 'false',
+        tempPassword: isNewPassenger ? tempPlainPassword : '',
+      },
+    });
+
+    // 7. Update booking with Stripe Checkout session ID
+    try {
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: { stripeCheckoutSessionId: session.id },
+      });
+    } catch (updateErr: any) {
+      console.warn('[CheckoutSession] Falling back to direct SQL update for stripeCheckoutSessionId:', updateErr?.message);
+      await prisma.$executeRawUnsafe(
+        'UPDATE bookings SET stripeCheckoutSessionId = ? WHERE id = ?',
+        session.id,
+        booking.id
+      );
+    }
+
+    // 8. Sign JWT token so returning customer is seamlessly logged in
+    const token = await signPassengerToken({
+      passengerId: passenger.id,
+      email: passenger.email,
+      fullName: passenger.fullName,
+      tokenVersion: passenger.tokenVersion || 1,
+    });
+
+    const response = NextResponse.json({
+      success: true,
+      checkoutUrl: session.url,
+      confirmationNumber: booking.confirmationNumber,
+      bookingId: booking.id,
+    });
+
+    // Attach cookie so session persists
+    response.cookies.set('passenger_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+
+    return response;
+  } catch (err: any) {
+    console.error('[/api/checkout-session] Error:', err);
+    return NextResponse.json(
+      { error: err?.message || 'Failed to initialize Stripe checkout session.' },
+      { status: 500 }
+    );
+  }
+}

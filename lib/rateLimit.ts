@@ -94,14 +94,29 @@ export async function rateLimit(
   }
 }
 
+/**
+ * Resolve the real client IP for rate-limiting.
+ *
+ * The app is only ever reached through the VPS's local reverse proxy
+ * (docker-compose binds it to 127.0.0.1), so the proxy is the sole source
+ * of truth for these headers. `X-Real-IP` is safe to trust as-is — nginx
+ * always *overwrites* it with `$remote_addr`, so a client can't forge it.
+ * `X-Forwarded-For` is only safe from its LAST entry: nginx appends the
+ * connecting IP to whatever arrived, so a spoofed `X-Forwarded-For: 1.2.3.4`
+ * sent by the client just becomes `1.2.3.4, <real-ip>` — the first entry is
+ * attacker-controlled, the last one isn't.
+ */
 export function getClientIp(req: Request): string {
-  const forwardedFor = req.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
-  }
   const realIp = req.headers.get('x-real-ip');
   if (realIp) {
     return realIp.trim();
+  }
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    const hops = forwardedFor.split(',').map((ip) => ip.trim()).filter(Boolean);
+    if (hops.length > 0) {
+      return hops[hops.length - 1];
+    }
   }
   return '127.0.0.1';
 }

@@ -23,6 +23,12 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async findBySlug(slug: string): Promise<Vehicle | null> {
     const vehicle = await prisma.vehicle.findUnique({
       where: { slug },
+      include: {
+        zoneRoutes: {
+          where: { isActive: true },
+          orderBy: { displayOrder: 'asc' },
+        },
+      },
     });
     return (vehicle as unknown as Vehicle) ?? null;
   }
@@ -30,6 +36,11 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async findById(id: string): Promise<Vehicle | null> {
     const vehicle = await prisma.vehicle.findUnique({
       where: { id },
+      include: {
+        zoneRoutes: {
+          orderBy: { displayOrder: 'asc' },
+        },
+      },
     });
     return (vehicle as unknown as Vehicle) ?? null;
   }
@@ -44,6 +55,11 @@ export class PrismaVehicleRepository implements IVehicleRepository {
         passengerCapacity: data.passengerCapacity ?? 4,
         luggageCapacity: data.luggageCapacity ?? 3,
         rateHourly: data.rateHourly ?? null,
+        minHours: data.minHours ?? 2,
+        ratePerMile: data.ratePerMile ?? null,
+        ratePerMinute: data.ratePerMinute ?? null,
+        baseFee: data.baseFee ?? null,
+        minimumTripFee: data.minimumTripFee ?? 65,
         description: data.description ?? null,
         image: data.image ?? null,
         features: data.features ?? null,
