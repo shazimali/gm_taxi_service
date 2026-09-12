@@ -81,6 +81,9 @@ export interface IBookingRepository {
   /** Find a booking by Stripe Checkout Session ID */
   findByCheckoutSessionId(sessionId: string): Promise<Booking | null>;
 
+  /** Find a booking by Stripe PaymentIntent ID */
+  findByPaymentIntentId(paymentIntentId: string): Promise<Booking | null>;
+
   /** List all bookings (admin) — most recent first */
   findAll(options?: { status?: BookingStatus; email?: string; limit?: number; offset?: number }): Promise<Booking[]>;
 
@@ -95,4 +98,17 @@ export interface IBookingRepository {
 
   /** Update payment status (Stripe webhook) */
   updatePaymentStatus(id: string, paymentStatus: string): Promise<Booking>;
+
+  /**
+   * Atomically update booking status + payment status together (payment
+   * capture/release flows) — avoids two separate writes leaving a booking
+   * briefly in an inconsistent status/paymentStatus combination.
+   */
+  updatePaymentOutcome(
+    id: string,
+    data: { status: BookingStatus; paymentStatus: string; stripePaymentIntentId?: string }
+  ): Promise<Booking>;
+
+  /** Permanently delete a booking (admin workflow) */
+  delete(id: string): Promise<void>;
 }

@@ -35,6 +35,13 @@ export class PrismaBookingRepository implements IBookingRepository {
     return (booking as unknown as Booking) ?? null;
   }
 
+  async findByPaymentIntentId(stripePaymentIntentId: string): Promise<Booking | null> {
+    const booking = await prisma.booking.findUnique({
+      where: { stripePaymentIntentId },
+    });
+    return (booking as unknown as Booking) ?? null;
+  }
+
   async findAll(options?: {
     status?: BookingStatus;
     email?: string;
@@ -108,6 +115,25 @@ export class PrismaBookingRepository implements IBookingRepository {
       data: { paymentStatus },
     });
     return booking as unknown as Booking;
+  }
+
+  async updatePaymentOutcome(
+    id: string,
+    data: { status: BookingStatus; paymentStatus: string; stripePaymentIntentId?: string }
+  ): Promise<Booking> {
+    const booking = await prisma.booking.update({
+      where: { id },
+      data: {
+        status: data.status,
+        paymentStatus: data.paymentStatus,
+        ...(data.stripePaymentIntentId ? { stripePaymentIntentId: data.stripePaymentIntentId } : {}),
+      },
+    });
+    return booking as unknown as Booking;
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.booking.delete({ where: { id } });
   }
 }
 

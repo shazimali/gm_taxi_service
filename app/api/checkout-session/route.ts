@@ -11,11 +11,9 @@ import {
   pricingService,
   type VehiclePricingConfig,
 } from '@/lib/services';
+import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
 
 export const dynamic = 'force-dynamic';
-
-const MIN_AMOUNT_USD = 10;
-const MAX_AMOUNT_USD = 50000;
 
 function normalizeServiceType(st?: string): 'hourly' | 'point-to-point' {
   if (!st) return 'point-to-point';

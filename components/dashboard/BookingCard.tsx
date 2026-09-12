@@ -5,6 +5,7 @@
 
 import { CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
+import Swal from 'sweetalert2';
 import { BookingRecord } from './usePassengerDashboard';
 
 interface Props {
@@ -50,6 +51,31 @@ export function BookingCard({ booking }: Props) {
   const canComplete = !isFinal && booking.paymentStatus === 'HOLD_PLACED';
 
   async function startStripeAction(action: 'cancel' | 'complete') {
+    const confirmation =
+      action === 'complete'
+        ? {
+            title: 'Complete this ride?',
+            text: 'This will capture the pre-authorized hold and mark the ride as completed.',
+            confirmButtonColor: '#166534',
+            confirmButtonText: 'Yes, complete ride',
+          }
+        : {
+            title: 'Cancel this ride?',
+            text: 'This will release the pre-authorized hold and cancel the booking.',
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Yes, cancel ride',
+          };
+
+    const result = await Swal.fire({
+      ...confirmation,
+      icon: 'warning',
+      showCancelButton: true,
+      cancelButtonText: 'Go back',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
     setActionError('');
     setPendingAction(action);
     try {
@@ -59,12 +85,21 @@ export function BookingCard({ booking }: Props) {
         body: JSON.stringify({ bookingId: booking.id }),
       });
       const data = await res.json();
-      if (!res.ok || !data.checkoutUrl) {
-        throw new Error(data.error || `Failed to start ${action} checkout.`);
+      if (!res.ok) {
+        throw new Error(data.error || `Failed to ${action} ride.`);
       }
-      window.location.href = data.checkoutUrl;
+      await Swal.fire({
+        icon: 'success',
+        title: action === 'complete' ? 'Ride Completed' : 'Ride Cancelled',
+        text:
+          action === 'complete'
+            ? 'The ride has been marked as completed and payment has been captured.'
+            : 'The ride has been cancelled and the payment hold has been released.',
+        confirmButtonColor: '#166534',
+      });
+      window.location.reload();
     } catch (err: any) {
-      setActionError(err.message || `Failed to start ${action} checkout.`);
+      setActionError(err.message || `Failed to ${action} ride.`);
       setPendingAction(null);
     }
   }
@@ -121,7 +156,7 @@ export function BookingCard({ booking }: Props) {
                 opacity: pendingAction && pendingAction !== 'complete' ? 0.6 : 1,
               }}
             >
-              {pendingAction === 'complete' ? 'Redirecting to Stripe…' : 'Complete Ride'}
+              {pendingAction === 'complete' ? 'Processing…' : 'Complete Ride'}
             </button>
           )}
           {canCancel && (
@@ -141,7 +176,7 @@ export function BookingCard({ booking }: Props) {
                 opacity: pendingAction && pendingAction !== 'cancel' ? 0.6 : 1,
               }}
             >
-              {pendingAction === 'cancel' ? 'Redirecting to Stripe…' : 'Cancel Ride'}
+              {pendingAction === 'cancel' ? 'Processing…' : 'Cancel Ride'}
             </button>
           )}
         </div>

@@ -18,6 +18,18 @@ enum BookingStatus {
   CANCELLED
 }
 
+// Tracks Stripe webhook event IDs that have already been applied, so
+// Stripe's at-least-once redelivery can't re-run state transitions or
+// re-send emails.
+model ProcessedStripeEvent {
+  id            String   @id @default(uuid())
+  stripeEventId String   @unique
+  eventType     String
+  processedAt   DateTime @default(now())
+
+  @@map("processed_stripe_events")
+}
+
 model Admin {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -56,11 +68,11 @@ model Vehicle {
   passengerCapacity Int      @default(4)
   luggageCapacity   Int      @default(3)
   rateHourly        Float?
-  minHours          Int      @default(2)   // minimum billable hours for hourly trips
-  ratePerMile       Float?                  // $/mile for metered P2P trips
-  ratePerMinute     Float?                  // $/min for metered P2P trips
-  baseFee           Float?                  // fixed base fee for metered P2P trips
-  minimumTripFee    Float    @default(65)   // minimum fare floor for any trip
+  minHours          Int      @default(2) // minimum billable hours for hourly trips
+  ratePerMile       Float? // $/mile for metered P2P trips
+  ratePerMinute     Float? // $/min for metered P2P trips
+  baseFee           Float? // fixed base fee for metered P2P trips
+  minimumTripFee    Float    @default(65) // minimum fare floor for any trip
   description       String?  @db.Text
   image             String?
   features          String?  @db.Text // JSON string array
@@ -68,7 +80,7 @@ model Vehicle {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  zoneRoutes        ZoneRoute[]
+  zoneRoutes ZoneRoute[]
 
   @@map("vehicles")
 }
@@ -87,17 +99,17 @@ model Airport {
 }
 
 model Passenger {
-  id               String          @id @default(uuid())
+  id               String   @id @default(uuid())
   fullName         String
-  email            String          @unique
+  email            String   @unique
   passwordHash     String
   phone            String?
-  stripeCustomerId String?         @unique
-  tokenVersion     Int             @default(1)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  stripeCustomerId String?  @unique
+  tokenVersion     Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  bookings         Booking[]
+  bookings Booking[]
 
   @@map("passengers")
 }
@@ -121,22 +133,22 @@ model Booking {
   status             BookingStatus @default(PENDING)
 
   // Passenger & Stripe Hold Tracking
-  passengerId           String?
-  passenger             Passenger? @relation(fields: [passengerId], references: [id], onDelete: SetNull)
-  stripePaymentIntentId String?    @unique
-  stripeCheckoutSessionId String?  @unique
-  paymentStatus         String     @default("PENDING") // PENDING, HOLD_PLACED, CAPTURED, CANCELLED_RELEASED, FAILED
-  estimatedPrice        Float?
+  passengerId             String?
+  passenger               Passenger? @relation(fields: [passengerId], references: [id], onDelete: SetNull)
+  stripePaymentIntentId   String?    @unique
+  stripeCheckoutSessionId String?    @unique
+  paymentStatus           String     @default("PENDING") // PENDING, HOLD_PLACED, CAPTURED, CANCELLED_RELEASED, FAILED
+  estimatedPrice          Float?
 
   // Pricing breakdown (Steps 1-4)
-  fareMode              String?    // "hourly" | "zone-flat" | "metered"
-  discountApplied       Float?     // discount amount in dollars
-  corporateAccountId    String?    // FK to CorporateAccount (optional)
-  tipPercent            Float?     // 0 | 10 | 15 | 18 | 20 | null (custom)
-  tipAmount             Float?     // dollar amount of tip
+  fareMode           String? // "hourly" | "zone-flat" | "metered"
+  discountApplied    Float? // discount amount in dollars
+  corporateAccountId String? // FK to CorporateAccount (optional)
+  tipPercent         Float? // 0 | 10 | 15 | 18 | 20 | null (custom)
+  tipAmount          Float? // dollar amount of tip
 
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("bookings")
 }
@@ -146,10 +158,10 @@ model ZoneRoute {
   id              String   @id @default(uuid())
   vehicleId       String
   vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  name            String                 // e.g. "Logan → Downtown Boston"
-  pickupKeywords  String   @db.Text      // comma-separated lowercase keywords
-  dropoffKeywords String   @db.Text      // comma-separated lowercase keywords
-  flatRate        Float                  // e.g. 85.00
+  name            String // e.g. "Logan → Downtown Boston"
+  pickupKeywords  String   @db.Text // comma-separated lowercase keywords
+  dropoffKeywords String   @db.Text // comma-separated lowercase keywords
+  flatRate        Float // e.g. 85.00
   isActive        Boolean  @default(true)
   displayOrder    Int      @default(0)
   createdAt       DateTime @default(now())
@@ -160,13 +172,13 @@ model ZoneRoute {
 
 // Corporate / account discounts — looked up by accountCode at checkout
 model CorporateAccount {
-  id           String   @id @default(uuid())
-  name         String
-  accountCode  String   @unique           // code entered by customer at checkout
-  discountPct  Float    @default(0)       // e.g. 10.0 = 10% off the fare
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  accountCode String   @unique // code entered by customer at checkout
+  discountPct Float    @default(0) // e.g. 10.0 = 10% off the fare
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("corporate_accounts")
 }
@@ -183,7 +195,7 @@ model SiteSetting {
   // Locations page hero
   locationsHeroTitle    String   @default("Our Service Locations")
   locationsHeroSubtitle String   @default("Luxury Executive Transport Across the Greater Area")
-  locationsHeroImage    String?  // stored path e.g. /uploads/...
+  locationsHeroImage    String? // stored path e.g. /uploads/...
   updatedAt             DateTime @updatedAt
 
   @@map("site_settings")
@@ -216,4 +228,3 @@ model AirportTravelRate {
 
   @@map("airport_travel_rates")
 }
-

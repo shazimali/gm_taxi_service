@@ -5,12 +5,9 @@ import { getCurrentPassenger } from '@/lib/auth';
 import { vehicleRepository, corporateAccountRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services/PricingService';
 import type { VehiclePricingConfig } from '@/lib/services/interfaces/IPricingService';
+import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
 
 export const dynamic = 'force-dynamic';
-
-// ── Server-side price bounds ──────────────────────────────────────────────────
-const MIN_AMOUNT_USD = 5;      // $5.00 minimum trip price
-const MAX_AMOUNT_USD = 10_000; // $10,000 maximum trip price
 
 function normalizeServiceType(st?: string): 'hourly' | 'point-to-point' {
   if (!st) return 'point-to-point';
