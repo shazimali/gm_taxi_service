@@ -33,15 +33,6 @@ export interface LocationResult {
   display_name: string;
 }
 
-export interface SavedCard {
-  id: string;
-  brand: string;
-  last4: string;
-  expMonth: number;
-  expYear: number;
-  isDefault: boolean;
-}
-
 export interface PassengerProfile {
   id: string;
   fullName: string;

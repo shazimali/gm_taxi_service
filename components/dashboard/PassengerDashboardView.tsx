@@ -1,44 +1,20 @@
 'use client';
 
 // ── PassengerDashboardView: Orchestrator (S — Single Responsibility) ────────────
-// Responsibility: compose sub-components and manage tab/navigation state only.
+// Responsibility: compose sub-components and manage page-level state only.
 // Data fetching → usePassengerDashboard hook
 // Booking rendering → BookingCard
-// Card rendering → SavedCardItem
 
 import { UserSession } from '@/lib/auth';
-import { Car, Clock, CreditCard, LogOut, User } from 'lucide-react';
+import { Car, LogOut, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { BookingCard } from './BookingCard';
-import { SavedCardItem } from './SavedCardItem';
 import { usePassengerDashboard } from './usePassengerDashboard';
-
-// ── Tab definition (O — Open/Closed) ──────────────────────────────────────────
-// To add a new tab, add an entry here — no other code changes needed.
-type TabId = 'rides' | 'cards';
-
-interface Tab {
-  id: TabId;
-  label: (count: number) => string;
-  icon: React.ReactNode;
-}
 
 export default function PassengerDashboardView({ user }: { user: UserSession }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabId>('rides');
-  const { bookings, cards, loading } = usePassengerDashboard(user.email);
-
-  const tabs: Tab[] = [
-    { id: 'rides', label: (n) => `My Rides & Orders (${n})`, icon: <Clock size={18} /> },
-    { id: 'cards', label: (n) => `Saved Payment Cards (${n})`, icon: <CreditCard size={18} /> },
-  ];
-
-  const tabCounts: Record<TabId, number> = {
-    rides: bookings.length,
-    cards: cards.length,
-  };
+  const { bookings, loading } = usePassengerDashboard(user.email);
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -122,102 +98,33 @@ export default function PassengerDashboardView({ user }: { user: UserSession }) 
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div style={{ display: 'flex', gap: '1rem', borderBottom: '2px solid #e2e8f0', marginBottom: '2rem', paddingBottom: '0.5rem' }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '0.75rem 1.5rem',
-                borderRadius: '10px',
-                border: 'none',
-                fontWeight: 800,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                backgroundColor: activeTab === tab.id ? '#0f172a' : 'transparent',
-                color: activeTab === tab.id ? '#ffffff' : '#64748b',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-            >
-              {tab.icon}
-              <span>{tab.label(tabCounts[tab.id])}</span>
-            </button>
-          ))}
-        </div>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 1.25rem 0' }}>
+          My Rides &amp; Orders ({bookings.length})
+        </h2>
 
-        {/* Tab Content */}
         {loading ? (
           <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
             Loading your dashboard data...
           </div>
+        ) : bookings.length === 0 ? (
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '3.5rem 2rem', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+            <Car size={48} style={{ color: '#cbd5e1', marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+              No Chauffeur Rides Found
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1.5rem', maxWidth: '420px', margin: '0 auto 1.5rem auto' }}>
+              You haven&apos;t booked any rides with this account yet. Reserve your airport transfer or executive chauffeur today.
+            </p>
+            <Link href="/book" className="btn btn--gold" style={{ padding: '0.75rem 2rem' }}>
+              Reserve Your First Ride
+            </Link>
+          </div>
         ) : (
-          <>
-            {/* Tab: My Rides */}
-            {activeTab === 'rides' && (
-              <div>
-                {bookings.length === 0 ? (
-                  <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '3.5rem 2rem', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                    <Car size={48} style={{ color: '#cbd5e1', marginBottom: '1rem' }} />
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
-                      No Chauffeur Rides Found
-                    </h3>
-                    <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1.5rem', maxWidth: '420px', margin: '0 auto 1.5rem auto' }}>
-                      You haven&apos;t booked any rides with this account yet. Reserve your airport transfer or executive chauffeur today.
-                    </p>
-                    <Link href="/book" className="btn btn--gold" style={{ padding: '0.75rem 2rem' }}>
-                      Reserve Your First Ride
-                    </Link>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    {bookings.map((booking) => (
-                      <BookingCard key={booking.id} booking={booking} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Tab: Saved Cards */}
-            {activeTab === 'cards' && (
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '2rem', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.04)' }}>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                    Stripe Customer Vault Cards
-                  </h3>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
-                    Saved cards are securely stored via Stripe Vault for 1-click booking pre-authorizations
-                  </p>
-                </div>
-
-                {cards.length === 0 ? (
-                  <div style={{ padding: '2.5rem 1rem', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-                    <CreditCard size={40} style={{ color: '#94a3b8', marginBottom: '0.75rem' }} />
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', margin: '0 0 0.25rem 0' }}>
-                      No Saved Payment Methods
-                    </h4>
-                    <p style={{ fontSize: '0.85rem', color: '#64748b', maxWidth: '400px', margin: '0 auto 1.25rem auto' }}>
-                      When you make a reservation on `/book`, you can securely save your card in your account.
-                    </p>
-                    <Link href="/book" className="btn btn--gold" style={{ padding: '0.65rem 1.5rem', fontSize: '0.85rem' }}>
-                      Book Ride &amp; Save Card
-                    </Link>
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
-                    {cards.map((card) => (
-                      <SavedCardItem key={card.id} card={card} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {bookings.map((booking) => (
+              <BookingCard key={booking.id} booking={booking} />
+            ))}
+          </div>
         )}
       </div>
     </div>

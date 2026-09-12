@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { PassengerProfile, SavedCard } from '../types';
+import type { PassengerProfile } from '../types';
 
 export function usePassengerAuth() {
   const [passenger, setPassenger] = useState<PassengerProfile | null>(null);
@@ -27,31 +27,6 @@ export function usePassengerAuth() {
   const [passengerPhone, setPassengerPhone] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
 
-  // Saved Cards
-  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
-  const [selectedCardId, setSelectedCardId] = useState<string>('new');
-  const [newCardNumber, setNewCardNumber] = useState('');
-  const [newCardExp, setNewCardExp] = useState('');
-  const [newCardCvc, setNewCardCvc] = useState('');
-
-  const fetchSavedCards = async () => {
-    try {
-      const res = await fetch('/api/passenger/cards');
-      if (res.ok) {
-        const data = await res.json();
-        const cards: SavedCard[] = data.cards || [];
-        setSavedCards(cards);
-        if (cards.length > 0) {
-          setSelectedCardId(cards[0].id);
-        } else {
-          setSelectedCardId('new');
-        }
-      }
-    } catch (e) {
-      console.error('Failed to fetch saved cards:', e);
-    }
-  };
-
   const checkPassengerAuth = async () => {
     setCheckingAuth(true);
     try {
@@ -63,7 +38,6 @@ export function usePassengerAuth() {
           setPassengerName(data.passenger.fullName || '');
           setPassengerEmail(data.passenger.email || '');
           setPassengerPhone(data.passenger.phone || '');
-          fetchSavedCards();
         } else {
           setPassenger(null);
         }
@@ -101,7 +75,6 @@ export function usePassengerAuth() {
       setPassengerName(data.passenger.fullName || '');
       setPassengerEmail(data.passenger.email || '');
       setPassengerPhone(data.passenger.phone || '');
-      fetchSavedCards();
     } catch (err: any) {
       setAuthError(err.message || 'Login failed');
     } finally {
@@ -134,7 +107,6 @@ export function usePassengerAuth() {
       setPassengerName(data.passenger.fullName || '');
       setPassengerEmail(data.passenger.email || '');
       setPassengerPhone(data.passenger.phone || '');
-      fetchSavedCards();
     } catch (err: any) {
       setAuthError(err.message || 'Registration failed');
     } finally {
@@ -170,15 +142,6 @@ export function usePassengerAuth() {
     setPassengerPhone,
     specialRequests,
     setSpecialRequests,
-    savedCards,
-    selectedCardId,
-    setSelectedCardId,
-    newCardNumber,
-    setNewCardNumber,
-    newCardExp,
-    setNewCardExp,
-    newCardCvc,
-    setNewCardCvc,
     handlePassengerLogin,
     handlePassengerRegister,
   };

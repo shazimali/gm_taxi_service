@@ -1,9 +1,6 @@
 /**
  * lib/repositories/interfaces/IPassengerRepository.ts
  *
- * I — Interface Segregation: only passenger-specific operations.
- *     Cards are on a separate interface so consumers that only need
- *     passenger identity don't pull in card operations.
  * D — Dependency Inversion: all passenger-touching routes depend
  *     on this contract, not on Prisma.
  */
@@ -28,18 +25,6 @@ export interface CreatePassengerData {
   stripeCustomerId?: string | null;
 }
 
-export interface PassengerCard {
-  id: string;
-  passengerId: string;
-  stripePaymentMethodId: string;
-  brand: string;
-  last4: string;
-  expMonth: number;
-  expYear: number;
-  isDefault: boolean;
-  createdAt: Date;
-}
-
 export interface IPassengerRepository {
   /** Find passenger by primary key */
   findById(id: string): Promise<Passenger | null>;
@@ -55,20 +40,4 @@ export interface IPassengerRepository {
 
   /** Increment tokenVersion to revoke all active sessions */
   incrementTokenVersion(id: string): Promise<void>;
-}
-
-export interface IPassengerCardRepository {
-  /** Get all saved cards for a passenger, newest first */
-  findByPassengerId(passengerId: string): Promise<PassengerCard[]>;
-
-  /** Upsert a card record after Stripe attach */
-  upsert(data: {
-    passengerId: string;
-    stripePaymentMethodId: string;
-    brand: string;
-    last4: string;
-    expMonth: number;
-    expYear: number;
-    isDefault?: boolean;
-  }): Promise<PassengerCard>;
 }

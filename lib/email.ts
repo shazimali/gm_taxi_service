@@ -82,7 +82,7 @@ export function renderWelcomeEmailHtml(
             <p style="margin: 0; font-size: 14px;"><strong>Your Chauffeur Perks:</strong></p>
             <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 13px; color: #3f3f46;">
               <li>Instant flat-rate price quotes for Logan BOS transfers</li>
-              <li>1-click card checkout &amp; automated receipt delivery</li>
+              <li>Secure card checkout &amp; automated receipt delivery</li>
               <li>Dedicated executive flight delay &amp; early arrival monitoring</li>
             </ul>
           </div>

@@ -1,7 +1,10 @@
 // ── BookingCard: Single Responsibility — renders one booking record ─────────────
-// Closed for modification: extend by passing new props, not by editing internals.
+// and the passenger-initiated actions (cancel / complete) that apply to it.
+
+'use client';
 
 import { CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
 import { BookingRecord } from './usePassengerDashboard';
 
 interface Props {
@@ -39,6 +42,33 @@ function StatusBadge({ booking }: { booking: BookingRecord }) {
 }
 
 export function BookingCard({ booking }: Props) {
+  const [pendingAction, setPendingAction] = useState<'cancel' | 'complete' | null>(null);
+  const [actionError, setActionError] = useState('');
+
+  const isFinal = booking.status === 'CANCELLED' || booking.status === 'COMPLETED';
+  const canCancel = !isFinal;
+  const canComplete = !isFinal && booking.paymentStatus === 'HOLD_PLACED';
+
+  async function startStripeAction(action: 'cancel' | 'complete') {
+    setActionError('');
+    setPendingAction(action);
+    try {
+      const res = await fetch(`/api/bookings/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: booking.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.checkoutUrl) {
+        throw new Error(data.error || `Failed to start ${action} checkout.`);
+      }
+      window.location.href = data.checkoutUrl;
+    } catch (err: any) {
+      setActionError(err.message || `Failed to start ${action} checkout.`);
+      setPendingAction(null);
+    }
+  }
+
   return (
     <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.75rem', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.04)' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
@@ -71,6 +101,57 @@ export function BookingCard({ booking }: Props) {
           </strong>
         </div>
       </div>
+
+      {(canCancel || canComplete) && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9' }}>
+          {canComplete && (
+            <button
+              type="button"
+              disabled={pendingAction !== null}
+              onClick={() => startStripeAction('complete')}
+              style={{
+                padding: '0.6rem 1.25rem',
+                borderRadius: '10px',
+                border: 'none',
+                backgroundColor: '#166534',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: pendingAction ? 'not-allowed' : 'pointer',
+                opacity: pendingAction && pendingAction !== 'complete' ? 0.6 : 1,
+              }}
+            >
+              {pendingAction === 'complete' ? 'Redirecting to Stripe…' : 'Complete Ride'}
+            </button>
+          )}
+          {canCancel && (
+            <button
+              type="button"
+              disabled={pendingAction !== null}
+              onClick={() => startStripeAction('cancel')}
+              style={{
+                padding: '0.6rem 1.25rem',
+                borderRadius: '10px',
+                border: '1px solid #dc2626',
+                backgroundColor: '#ffffff',
+                color: '#dc2626',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: pendingAction ? 'not-allowed' : 'pointer',
+                opacity: pendingAction && pendingAction !== 'cancel' ? 0.6 : 1,
+              }}
+            >
+              {pendingAction === 'cancel' ? 'Redirecting to Stripe…' : 'Cancel Ride'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {actionError && (
+        <p style={{ color: '#dc2626', fontSize: '0.8rem', fontWeight: 700, marginTop: '0.75rem', marginBottom: 0 }}>
+          {actionError}
+        </p>
+      )}
     </div>
   );
 }

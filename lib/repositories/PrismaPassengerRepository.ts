@@ -1,9 +1,8 @@
 /**
  * lib/repositories/PrismaPassengerRepository.ts
  *
- * S — Single Responsibility: all Passenger + PassengerCard DB operations.
- * D — Dependency Inversion: implements IPassengerRepository &
- *     IPassengerCardRepository.
+ * S — Single Responsibility: all Passenger DB operations.
+ * D — Dependency Inversion: implements IPassengerRepository.
  *
  * Note on the `PrismaClient` fallback: Next.js dev server hot-reloads can
  * cause the global prisma client to lose the `passenger` model in the
@@ -14,9 +13,7 @@ import { PrismaClient } from '@prisma/client';
 import { prisma as globalPrisma } from '@/lib/prisma';
 import type {
   IPassengerRepository,
-  IPassengerCardRepository,
   Passenger,
-  PassengerCard,
   CreatePassengerData,
 } from './interfaces/IPassengerRepository';
 
@@ -68,44 +65,5 @@ export class PrismaPassengerRepository implements IPassengerRepository {
   }
 }
 
-export class PrismaPassengerCardRepository implements IPassengerCardRepository {
-  async findByPassengerId(passengerId: string): Promise<PassengerCard[]> {
-    return await globalPrisma.passengerCard.findMany({
-      where: { passengerId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async upsert(data: {
-    passengerId: string;
-    stripePaymentMethodId: string;
-    brand: string;
-    last4: string;
-    expMonth: number;
-    expYear: number;
-    isDefault?: boolean;
-  }): Promise<PassengerCard> {
-    return await globalPrisma.passengerCard.upsert({
-      where: { stripePaymentMethodId: data.stripePaymentMethodId },
-      update: {
-        brand: data.brand,
-        last4: data.last4,
-        expMonth: data.expMonth,
-        expYear: data.expYear,
-      },
-      create: {
-        passengerId: data.passengerId,
-        stripePaymentMethodId: data.stripePaymentMethodId,
-        brand: data.brand,
-        last4: data.last4,
-        expMonth: data.expMonth,
-        expYear: data.expYear,
-        isDefault: data.isDefault ?? false,
-      },
-    });
-  }
-}
-
-/** Singleton instances — import these in route handlers */
+/** Singleton instance — import this in route handlers */
 export const passengerRepository = new PrismaPassengerRepository();
-export const passengerCardRepository = new PrismaPassengerCardRepository();

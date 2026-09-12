@@ -37,6 +37,7 @@ export async function POST(req: Request) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const bookingId = session.metadata?.bookingId;
+        const action = session.metadata?.action;
         const isNewPassenger = session.metadata?.isNewPassenger === 'true';
         const tempPassword = session.metadata?.tempPassword;
         const paymentIntentId =
@@ -47,6 +48,50 @@ export async function POST(req: Request) {
         const booking = await prisma.booking.findFirst({
           where: bookingId ? { id: bookingId } : { stripeCheckoutSessionId: session.id },
         });
+
+        // 🚫 Passenger-initiated Cancel Ride checkout (cancellation fee charged) —
+        // release the original pre-authorization hold and mark the booking cancelled.
+        if (booking && action === 'cancel_ride') {
+          if (booking.stripePaymentIntentId) {
+            try {
+              await stripe.paymentIntents.cancel(booking.stripePaymentIntentId);
+            } catch (stripeErr: any) {
+              console.warn('[Stripe Webhook] Cancel hold warning:', stripeErr?.message);
+            }
+          }
+          await prisma.booking.update({
+            where: { id: booking.id },
+            data: { paymentStatus: 'CANCELLED_RELEASED', status: 'CANCELLED' },
+          });
+          console.log(`[Stripe Webhook] Passenger cancelled booking #${booking.confirmationNumber}`);
+          break;
+        }
+
+        // ✅ Passenger-initiated Complete Ride checkout (final fare charged) —
+        // release the original hold (superseded by this charge) and mark completed.
+        if (booking && action === 'complete_ride') {
+          if (booking.stripePaymentIntentId) {
+            try {
+              await stripe.paymentIntents.cancel(booking.stripePaymentIntentId);
+            } catch (stripeErr: any) {
+              console.warn('[Stripe Webhook] Release hold on complete warning:', stripeErr?.message);
+            }
+          }
+          await prisma.booking.update({
+            where: { id: booking.id },
+            data: {
+              paymentStatus: 'CAPTURED',
+              status: 'COMPLETED',
+              // Re-point to the new charge's PaymentIntent so the old hold's
+              // upcoming `payment_intent.canceled` event (triggered by the
+              // cancel() call above) no longer matches this booking and
+              // can't flip it back to CANCELLED.
+              stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
+            },
+          });
+          console.log(`[Stripe Webhook] Passenger completed booking #${booking.confirmationNumber}`);
+          break;
+        }
 
         if (booking) {
           await prisma.booking.update({

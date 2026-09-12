@@ -20,41 +20,22 @@ export interface BookingRecord {
   createdAt: string;
 }
 
-export interface CardData {
-  id: string;
-  brand: string;
-  last4: string;
-  expMonth: number;
-  expYear: number;
-}
-
 interface DashboardData {
   bookings: BookingRecord[];
-  cards: CardData[];
   loading: boolean;
 }
 
 export function usePassengerDashboard(email: string): DashboardData {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
-  const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [bookingsRes, cardsRes] = await Promise.all([
-          fetch(`/api/bookings?email=${encodeURIComponent(email)}`),
-          fetch('/api/passenger/cards'),
-        ]);
-
-        if (bookingsRes.ok) {
-          const data = await bookingsRes.json();
+        const res = await fetch(`/api/bookings?email=${encodeURIComponent(email)}`);
+        if (res.ok) {
+          const data = await res.json();
           setBookings(data.bookings || []);
-        }
-
-        if (cardsRes.ok) {
-          const data = await cardsRes.json();
-          setCards(data.cards || []);
         }
       } catch (err) {
         console.error('[PassengerDashboard] Failed to load data:', err);
@@ -66,5 +47,5 @@ export function usePassengerDashboard(email: string): DashboardData {
     loadData();
   }, [email]);
 
-  return { bookings, cards, loading };
+  return { bookings, loading };
 }

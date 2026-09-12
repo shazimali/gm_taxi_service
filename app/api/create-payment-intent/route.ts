@@ -30,7 +30,6 @@ export async function POST(req: Request) {
       hourlyCount,
       pickupLocation,
       dropoffLocation,
-      paymentMethodId,
       corporateAccountCode,
     } = body;
 
@@ -125,12 +124,6 @@ export async function POST(req: Request) {
 
     if (passenger?.stripeCustomerId) {
       paymentIntentOptions.customer = passenger.stripeCustomerId;
-    }
-
-    if (paymentMethodId && passenger?.stripeCustomerId) {
-      paymentIntentOptions.payment_method = paymentMethodId;
-      paymentIntentOptions.confirm = true;
-      paymentIntentOptions.off_session = true;
     }
 
     let paymentIntent;
