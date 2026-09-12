@@ -2,8 +2,13 @@ import Stripe from 'stripe';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
 
+// `next build` always forces NODE_ENV=production, but the real secret is only
+// injected at container start (see docker-compose.yml), not at build time.
+// Only refuse to start once the server is actually running in production.
+const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
+
 if (!stripeSecretKey) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && !isProductionBuild) {
     throw new Error(
       'STRIPE_SECRET_KEY environment variable is not set. Refusing to start in production.'
     );
