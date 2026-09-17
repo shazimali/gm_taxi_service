@@ -130,10 +130,12 @@ export function useRoutePricing(pickup: string, dropoff: string) {
     fetchQuote(selectedVehicle, '');
   };
 
-  // Refresh server quote when route, vehicle or service changes
+  // Refresh server quotes for the whole fleet whenever route or service changes,
+  // so zone-flat pricing is already cached before the customer reaches vehicle
+  // selection (avoids the metered-rate fallback below being shown for zone routes).
   useEffect(() => {
-    fetchQuote(selectedVehicle);
-  }, [fetchQuote, selectedVehicle]);
+    FLEET_DATA.forEach((vehicle) => fetchQuote(vehicle.slug));
+  }, [fetchQuote]);
 
   // Client-side fallback calculation if server response is pending
   const calculateVehiclePrice = useCallback(
