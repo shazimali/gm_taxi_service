@@ -67,10 +67,7 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
         </button>
       </div>
 
-      <div
-        className="booking-vehicles-grid"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}
-      >
+      <div className="booking-vehicles-grid">
         {FLEET_DATA.map((vehicle) => {
           const isSelected = selectedVehicle === vehicle.slug;
 

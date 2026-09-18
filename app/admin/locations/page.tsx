@@ -140,6 +140,7 @@ export default function LocationsAdminPage() {
         </div>
       ) : (
         <div className="admin-content-card">
+          <div className="admin-table-container">
           <table className="admin-table">
             <thead className="admin-table__head">
               <tr>
@@ -195,6 +196,7 @@ export default function LocationsAdminPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

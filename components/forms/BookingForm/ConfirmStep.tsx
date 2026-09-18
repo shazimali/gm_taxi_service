@@ -440,10 +440,8 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
 
         {/* Tip Selection Buttons */}
         <div
+          className="tip-options-grid"
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(6, 1fr)',
-            gap: '0.5rem',
             marginBottom: '0.85rem',
           }}
         >

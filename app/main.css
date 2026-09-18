@@ -3354,8 +3354,14 @@ p {
   background: #ffffff;
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-lg);
-  padding: 2.5rem;
+  padding: 1.5rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+@media (min-width: 640px) {
+  .contact-form-card {
+    padding: 2.5rem;
+  }
 }
 
 .contact-form-card--full {
@@ -3445,6 +3451,32 @@ p {
   font-weight: 600;
 }
 
+/* ── Booking Form: Vehicle selection grid ────── */
+.booking-vehicles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 480px) {
+  .booking-vehicles-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Booking Form: Tip selection grid ────────── */
+.tip-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+@media (min-width: 480px) {
+  .tip-options-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
 /* ── Info Column ─────────────────────────────── */
 .contact-info-col {
   display: flex;
@@ -3503,7 +3535,7 @@ a.contact-info-item:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  shrink: 0;
+  flex-shrink: 0;
   box-shadow: 0 4px 10px rgba(191, 160, 84, 0.25);
 }
 

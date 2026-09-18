@@ -128,6 +128,7 @@ export default function TravelRatesAdminPage() {
         </div>
       ) : (
         <div className="admin-content-card">
+          <div className="admin-table-container">
           <table className="admin-table">
             <thead className="admin-table__head">
               <tr>
@@ -201,6 +202,7 @@ export default function TravelRatesAdminPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

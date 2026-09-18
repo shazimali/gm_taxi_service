@@ -121,7 +121,7 @@ export default function Header({ initialSettings }: HeaderProps = {}) {
             <span className="menu-toggle__bar"></span>
           </button>
 
-          <ul id="primary-menu" className={`nav-menu ${mobileMenuOpen ? 'toggled-on' : ''}`}>
+          <ul id="primary-menu" className={`nav-menu ${mobileMenuOpen ? 'is-open' : ''}`}>
             <li className="menu-item">
               <Link href="/" className={isActive('/') ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
                 Home
