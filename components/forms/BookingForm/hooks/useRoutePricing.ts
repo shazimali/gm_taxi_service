@@ -2,10 +2,15 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { FLEET_DATA } from '@/data/fleetData';
-import { calculateGoogleDistanceMatrix, distanceService, pricingService } from '@/lib/services';
+import {
+  calculateGoogleDistanceMatrix,
+  calculateGoogleRouteWithStops,
+  distanceService,
+  pricingService,
+} from '@/lib/services';
 import type { PriceCalculationResult } from '@/lib/services';
 
-export function useRoutePricing(pickup: string, dropoff: string) {
+export function useRoutePricing(pickup: string, dropoff: string, stops: string[] = []) {
   const [selectedService, setSelectedService] = useState('Airport Transportation');
   const [selectedVehicle, setSelectedVehicle] = useState(FLEET_DATA[0].slug);
   const [hourlyCount, setHourlyCount] = useState(3);
@@ -37,20 +42,31 @@ export function useRoutePricing(pickup: string, dropoff: string) {
   // Server quote cache per vehicle slug
   const [serverQuotes, setServerQuotes] = useState<Record<string, PriceCalculationResult>>({});
 
-  // 1. Distance & duration estimation
+  // 1. Distance & duration estimation (pickup -> stops -> dropoff)
+  const stopsKey = stops.join('|');
   useEffect(() => {
     if (!pickup || !dropoff) return;
 
-    // Instant baseline
-    const baseline = distanceService.estimate(pickup, dropoff);
-    setEstimatedMiles(baseline.miles);
-    setEstimatedMinutes(baseline.minutes);
+    // Instant baseline: sum each leg's rule-based estimate
+    const waypoints = [pickup, ...stops, dropoff];
+    const baselineTotal = waypoints.slice(0, -1).reduce(
+      (acc, origin, i) => {
+        const leg = distanceService.estimate(origin, waypoints[i + 1]);
+        return { miles: acc.miles + leg.miles, minutes: acc.minutes + leg.minutes };
+      },
+      { miles: 0, minutes: 0 }
+    );
+    setEstimatedMiles(Math.round(baselineTotal.miles * 10) / 10);
+    setEstimatedMinutes(Math.round(baselineTotal.minutes));
 
     // Google Maps traffic-aware duration & distance
     let isCancelled = false;
     const fetchActualMatrix = async () => {
       try {
-        const actual = await calculateGoogleDistanceMatrix(pickup, dropoff);
+        const actual =
+          stops.length > 0
+            ? await calculateGoogleRouteWithStops(pickup, stops, dropoff)
+            : await calculateGoogleDistanceMatrix(pickup, dropoff);
         if (!isCancelled && actual && actual.miles > 0) {
           setEstimatedMiles(actual.miles);
           setEstimatedMinutes(actual.minutes);
@@ -65,7 +81,8 @@ export function useRoutePricing(pickup: string, dropoff: string) {
     return () => {
       isCancelled = true;
     };
-  }, [pickup, dropoff]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickup, dropoff, stopsKey]);
 
   // 2. Fetch server quote from /api/quote
   const fetchQuote = useCallback(

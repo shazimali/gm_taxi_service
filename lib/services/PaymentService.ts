@@ -20,6 +20,7 @@ import {
   type Booking,
 } from '@/lib/repositories';
 import { enqueueEmail } from '@/lib/queue/emailQueue';
+import { parseStops } from '@/lib/utils/stops';
 import { NotFoundError, InvalidStateError, PaymentProviderError } from '@/lib/errors';
 import type {
   IPaymentService,
@@ -176,6 +177,7 @@ export class PaymentService implements IPaymentService {
             vehicleSlug: updated.vehicleSlug,
             pickupLocation: updated.pickupLocation,
             dropoffLocation: updated.dropoffLocation,
+            stops: parseStops(updated.stops),
             pickupDate: updated.pickupDate,
             pickupTime: updated.pickupTime,
             passengers: updated.passengers,

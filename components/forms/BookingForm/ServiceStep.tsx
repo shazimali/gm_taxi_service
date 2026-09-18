@@ -1,8 +1,11 @@
 'use client';
 
-import React from 'react';
-import { ArrowRight, Loader2, LocateFixed, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, Loader2, LocateFixed, MapPin, Plus, X } from 'lucide-react';
 import { RouteMapPreview } from './RouteMapPreview';
+import { TransferDatePicker } from './TransferDatePicker';
+import { TransferTimePicker } from './TransferTimePicker';
+import type { StopItem } from './types';
 
 interface ServiceStepProps {
   selectedService: string;
@@ -28,6 +31,15 @@ interface ServiceStepProps {
   pickupContainerRef: React.RefObject<HTMLDivElement | null>;
   dropoffContainerRef: React.RefObject<HTMLDivElement | null>;
   isBothLocationsFinal: boolean;
+  stops: StopItem[];
+  addStop: () => void;
+  removeStop: (id: string) => void;
+  updateStop: (id: string, val: string) => void;
+  selectStopSuggestion: (id: string, val: string) => void;
+  finalizeStopOnBlur: (id: string) => void;
+  setShowStopDropdown: (id: string, show: boolean) => void;
+  stopContainerRef: (id: string) => (el: HTMLDivElement | null) => void;
+  validStops: string[];
   estimatedMiles: number;
   estimatedMinutes: number;
   pickupDate: string;
@@ -73,6 +85,15 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
   pickupContainerRef,
   dropoffContainerRef,
   isBothLocationsFinal,
+  stops,
+  addStop,
+  removeStop,
+  updateStop,
+  selectStopSuggestion,
+  finalizeStopOnBlur,
+  setShowStopDropdown,
+  stopContainerRef,
+  validStops,
   estimatedMiles,
   estimatedMinutes,
   pickupDate,
@@ -95,6 +116,21 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
   setPhone,
   onNext,
 }) => {
+  const [errors, setErrors] = useState<{
+    pickup?: string;
+    dropoff?: string;
+    pickupDate?: string;
+    pickupTime?: string;
+    fullName?: string;
+    email?: string;
+  }>({});
+
+  const clearError = (field: keyof typeof errors) => {
+    setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
+
+  const errorBorderStyle = { borderColor: '#dc2626' };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Services Dropdown */}
@@ -145,13 +181,14 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
                 setPickup(e.target.value);
                 setPickupFinalized(false);
                 setShowPickupDropdown(true);
+                clearError('pickup');
               }}
               onBlur={() => {
                 if (pickup.trim().length >= 3) setPickupFinalized(true);
               }}
               placeholder="Type location, airport, or hotel name..."
               className="form-input"
-              style={{ paddingRight: '2.6rem' }}
+              style={{ paddingRight: '2.6rem', ...(errors.pickup ? errorBorderStyle : null) }}
             />
             {/* Small icon button for Use My Location */}
             <button
@@ -198,6 +235,8 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
               )}
             </button>
           </div>
+
+          {errors.pickup && <span className="field-error">{errors.pickup}</span>}
 
           {/* Pickup Live Search Dropdown */}
           {showPickupDropdown && pickupSuggestions.length > 0 && (
@@ -264,13 +303,14 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
                 setDropoff(e.target.value);
                 setDropoffFinalized(false);
                 setShowDropoffDropdown(true);
+                clearError('dropoff');
               }}
               onBlur={() => {
                 if (dropoff.trim().length >= 3) setDropoffFinalized(true);
               }}
               placeholder="Type destination, address, or city..."
               className="form-input"
-              style={{ paddingRight: '2.5rem' }}
+              style={{ paddingRight: '2.5rem', ...(errors.dropoff ? errorBorderStyle : null) }}
             />
             {loadingDropoff && (
               <Loader2
@@ -286,6 +326,8 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
               />
             )}
           </div>
+
+          {errors.dropoff && <span className="field-error">{errors.dropoff}</span>}
 
           {/* Dropoff Live Search Dropdown */}
           {showDropoffDropdown && dropoffSuggestions.length > 0 && (
@@ -338,11 +380,137 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
         )}
       </div>
 
+      {/* Intermediate Stops — extra pickup/drop points along the ride */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {stops.map((stop, index) => (
+          <div key={stop.id} className="form-group" style={{ position: 'relative' }} ref={stopContainerRef(stop.id)}>
+            <label className="form-label">Stop {index + 1}</label>
+            <div style={{ position: 'relative', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input
+                  type="text"
+                  value={stop.value}
+                  onFocus={() => setShowStopDropdown(stop.id, true)}
+                  onChange={(e) => updateStop(stop.id, e.target.value)}
+                  onBlur={() => finalizeStopOnBlur(stop.id)}
+                  placeholder="Type an address to stop along the way..."
+                  className="form-input"
+                  style={{ paddingRight: '2.5rem' }}
+                />
+                {stop.loading && (
+                  <Loader2
+                    size={16}
+                    className="animate-spin"
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#c5a46d',
+                    }}
+                  />
+                )}
+
+                {/* Stop Live Search Dropdown */}
+                {stop.showDropdown && stop.suggestions.length > 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      zIndex: 50,
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '10px',
+                      marginTop: '4px',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+                      maxHeight: '230px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {stop.suggestions.map((loc, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => selectStopSuggestion(stop.id, loc)}
+                        style={{
+                          padding: '0.65rem 1rem',
+                          fontSize: '0.825rem',
+                          color: '#0f172a',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #f1f5f9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontWeight: 500,
+                          lineHeight: 1.4,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                      >
+                        <MapPin size={15} style={{ color: '#b8860b', flexShrink: 0 }} />
+                        <span>{loc}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => removeStop(stop.id)}
+                title="Remove stop"
+                aria-label="Remove stop"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={addStop}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.4rem',
+            alignSelf: 'flex-start',
+            padding: '0.5rem 0.9rem',
+            borderRadius: '8px',
+            border: '1px dashed #b8860b',
+            backgroundColor: 'transparent',
+            color: '#b8860b',
+            fontWeight: 700,
+            fontSize: '0.825rem',
+            cursor: 'pointer',
+          }}
+        >
+          <Plus size={15} />
+          <span>Add Stop</span>
+        </button>
+      </div>
+
       {/* Interactive Google Map Route Preview */}
       {isBothLocationsFinal && (
         <RouteMapPreview
           pickup={pickup}
           dropoff={dropoff}
+          stops={validStops}
           estimatedMiles={estimatedMiles}
           estimatedMinutes={estimatedMinutes}
         />
@@ -354,26 +522,30 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
           <label className="form-label">
             Transfer Date <span className="req">*</span>
           </label>
-          <input
-            type="date"
-            required
+          <TransferDatePicker
             value={pickupDate}
-            onChange={(e) => setPickupDate(e.target.value)}
-            className="form-input"
+            onChange={(val) => {
+              setPickupDate(val);
+              clearError('pickupDate');
+            }}
+            error={!!errors.pickupDate}
           />
+          {errors.pickupDate && <span className="field-error">{errors.pickupDate}</span>}
         </div>
 
         <div className="form-group">
           <label className="form-label">
             Pickup Time <span className="req">*</span>
           </label>
-          <input
-            type="time"
-            required
+          <TransferTimePicker
             value={pickupTime}
-            onChange={(e) => setPickupTime(e.target.value)}
-            className="form-input"
+            onChange={(val) => {
+              setPickupTime(val);
+              clearError('pickupTime');
+            }}
+            error={!!errors.pickupTime}
           />
+          {errors.pickupTime && <span className="field-error">{errors.pickupTime}</span>}
         </div>
       </div>
 
@@ -470,10 +642,15 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
               type="text"
               required
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                clearError('fullName');
+              }}
               placeholder="e.g. John Doe"
               className="form-input"
+              style={errors.fullName ? errorBorderStyle : undefined}
             />
+            {errors.fullName && <span className="field-error">{errors.fullName}</span>}
           </div>
 
           <div className="form-group">
@@ -484,10 +661,15 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearError('email');
+              }}
               placeholder="e.g. john@example.com"
               className="form-input"
+              style={errors.email ? errorBorderStyle : undefined}
             />
+            {errors.email && <span className="field-error">{errors.email}</span>}
           </div>
         </div>
 
@@ -511,22 +693,20 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
         type="button"
         onClick={() => {
           const isHourly = selectedService.includes('Hourly');
-          if (!pickup || !pickupDate || !pickupTime || (!isHourly && !dropoff)) {
-            alert(
-              isHourly
-                ? 'Please provide Pickup location, Transfer Date, and Pickup Time.'
-                : 'Please provide Pickup location, Drop-off destination, Transfer Date, and Pickup Time.'
-            );
-            return;
+          const nextErrors: typeof errors = {};
+
+          if (!pickup.trim()) nextErrors.pickup = 'Please provide a Pickup location.';
+          if (!isHourly && !dropoff.trim()) nextErrors.dropoff = 'Please provide a Drop-off destination.';
+          if (!pickupDate.trim()) nextErrors.pickupDate = 'Please select a Transfer Date.';
+          if (!pickupTime.trim()) nextErrors.pickupTime = 'Please select a Pickup Time.';
+          if (!fullName.trim()) nextErrors.fullName = 'Please provide your Full Name.';
+          if (!email.trim() || !email.includes('@')) {
+            nextErrors.email = 'Please provide a valid Email Address.';
           }
-          if (!fullName || !fullName.trim()) {
-            alert('Please provide your Full Name.');
-            return;
-          }
-          if (!email || !email.trim() || !email.includes('@')) {
-            alert('Please provide a valid Email Address for your booking confirmation.');
-            return;
-          }
+
+          setErrors(nextErrors);
+          if (Object.keys(nextErrors).length > 0) return;
+
           onNext();
         }}
         className="btn btn--gold btn--full"

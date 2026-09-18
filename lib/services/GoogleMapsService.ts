@@ -303,3 +303,32 @@ export async function calculateGoogleDistanceMatrix(
   }
 }
 
+/**
+ * Calculates total driving distance & duration for a multi-stop route
+ * (pickup -> stop 1 -> stop 2 -> ... -> dropoff) by summing each leg via
+ * calculateGoogleDistanceMatrix. Returns null if any leg cannot be resolved.
+ */
+export async function calculateGoogleRouteWithStops(
+  pickup: string,
+  stops: string[],
+  dropoff: string
+): Promise<{ miles: number; minutes: number } | null> {
+  const waypoints = [pickup, ...stops.filter((s) => s.trim().length > 0), dropoff];
+  if (waypoints.length < 2) return null;
+
+  let totalMiles = 0;
+  let totalMinutes = 0;
+
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const leg = await calculateGoogleDistanceMatrix(waypoints[i], waypoints[i + 1]);
+    if (!leg) return null;
+    totalMiles += leg.miles;
+    totalMinutes += leg.minutes;
+  }
+
+  return {
+    miles: Math.round(totalMiles * 10) / 10,
+    minutes: Math.round(totalMinutes),
+  };
+}
+

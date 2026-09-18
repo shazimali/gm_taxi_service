@@ -23,6 +23,7 @@ export interface Booking {
   vehicleSlug: string | null;
   pickupLocation: string;
   dropoffLocation: string | null;
+  stops: string | null;
   pickupDate: string;
   pickupTime: string;
   passengers: number;
@@ -53,6 +54,7 @@ export interface CreateBookingData {
   vehicleSlug?: string | null;
   pickupLocation: string;
   dropoffLocation?: string | null;
+  stops?: string | null;
   pickupDate: string;
   pickupTime: string;
   passengers?: number;

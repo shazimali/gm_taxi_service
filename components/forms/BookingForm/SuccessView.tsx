@@ -15,6 +15,7 @@ interface SuccessViewProps {
   chosenVehicleObj: (typeof FLEET_DATA)[0];
   pickup: string;
   dropoff: string;
+  stops: string[];
   estimatedMiles: number;
   estimatedMinutes: number;
   hourlyCount: number;
@@ -30,6 +31,7 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
   chosenVehicleObj,
   pickup,
   dropoff,
+  stops,
   estimatedMiles,
   estimatedMinutes,
   hourlyCount,
@@ -147,6 +149,12 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
           <div>
             <strong style={{ color: '#ffffff' }}>Pickup (Start Point):</strong> {pickup}
           </div>
+          {stops.length > 0 && (
+            <div>
+              <strong style={{ color: '#ffffff' }}>Stops:</strong>{' '}
+              {stops.map((s, i) => `${i + 1}. ${s}`).join('  ')}
+            </div>
+          )}
           {!selectedService.includes('Hourly') && (
             <div>
               <strong style={{ color: '#ffffff' }}>Destination (End Point):</strong>{' '}

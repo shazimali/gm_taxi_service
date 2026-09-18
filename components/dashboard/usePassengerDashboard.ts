@@ -11,6 +11,7 @@ export interface BookingRecord {
   vehicleSlug: string;
   pickupLocation: string;
   dropoffLocation: string;
+  stops: string | null;
   pickupDate: string;
   pickupTime: string;
   passengers: number;

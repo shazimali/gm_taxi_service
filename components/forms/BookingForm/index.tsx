@@ -28,7 +28,7 @@ export default function BookingForm() {
   const location = useLocationSearch();
 
   // 2. Route & Vehicle pricing state & handlers
-  const pricing = useRoutePricing(location.pickup, location.dropoff);
+  const pricing = useRoutePricing(location.pickup, location.dropoff, location.validStops);
 
   // 3. Passenger auth state & handlers (used to prefill if logged in)
   const auth = usePassengerAuth();
@@ -74,6 +74,7 @@ export default function BookingForm() {
           vehicleSlug: pricing.selectedVehicle,
           pickupLocation: location.pickup,
           dropoffLocation: location.dropoff,
+          stops: location.validStops,
           pickupDate: pricing.pickupDate,
           pickupTime: pricing.pickupTime,
           passengers: pricing.passengers,
@@ -150,6 +151,7 @@ export default function BookingForm() {
           chosenVehicleObj={pricing.chosenVehicleObj}
           pickup={location.pickup}
           dropoff={location.dropoff}
+          stops={location.validStops}
           estimatedMiles={pricing.estimatedMiles}
           estimatedMinutes={pricing.estimatedMinutes}
           hourlyCount={pricing.hourlyCount}
@@ -183,6 +185,15 @@ export default function BookingForm() {
               pickupContainerRef={location.pickupContainerRef}
               dropoffContainerRef={location.dropoffContainerRef}
               isBothLocationsFinal={location.isBothLocationsFinal}
+              stops={location.stops}
+              addStop={location.addStop}
+              removeStop={location.removeStop}
+              updateStop={location.updateStop}
+              selectStopSuggestion={location.selectStopSuggestion}
+              finalizeStopOnBlur={location.finalizeStopOnBlur}
+              setShowStopDropdown={location.setShowStopDropdown}
+              stopContainerRef={location.stopContainerRef}
+              validStops={location.validStops}
               estimatedMiles={pricing.estimatedMiles}
               estimatedMinutes={pricing.estimatedMinutes}
               pickupDate={pricing.pickupDate}
@@ -232,6 +243,9 @@ export default function BookingForm() {
             <ConfirmStep
               selectedService={pricing.selectedService}
               chosenVehicleObj={pricing.chosenVehicleObj}
+              pickup={location.pickup}
+              dropoff={location.dropoff}
+              stops={location.validStops}
               estimatedMiles={pricing.estimatedMiles}
               estimatedMinutes={pricing.estimatedMinutes}
               hourlyCount={pricing.hourlyCount}

@@ -31,6 +31,7 @@ export async function POST(req: Request) {
       vehicleSlug = 'executive-sedan',
       pickupLocation,
       dropoffLocation,
+      stops,
       pickupDate,
       pickupTime,
       passengers = 1,
@@ -61,6 +62,9 @@ export async function POST(req: Request) {
 
     const cleanEmail = email.toLowerCase().trim();
     const cleanPhone = phone ? phone.trim() : null;
+    const cleanStops: string[] = Array.isArray(stops)
+      ? stops.filter((s: unknown): s is string => typeof s === 'string' && s.trim().length >= 3).map((s) => s.trim())
+      : [];
 
     // 2. Fetch vehicle & build pricing config (Server-Side Price Validation)
     const targetSlug = vehicleSlug || 'executive-sedan';
@@ -174,6 +178,7 @@ export async function POST(req: Request) {
         vehicleSlug: targetSlug,
         pickupLocation: pickupLocation.trim(),
         dropoffLocation: dropoffLocation?.trim() || null,
+        stops: cleanStops.length > 0 ? JSON.stringify(cleanStops) : null,
         pickupDate: pickupDate.trim(),
         pickupTime: pickupTime.trim(),
         passengers: Number(passengers) || 1,
@@ -204,8 +209,8 @@ export async function POST(req: Request) {
           product_data: {
             name: `${serviceLabel} — ${vehicle?.name || 'Executive Fleet'}`,
             description: `Pickup: ${pickupLocation} | Date: ${pickupDate} at ${pickupTime}${
-              dropoffLocation ? ` | Dropoff: ${dropoffLocation}` : ''
-            }`,
+              cleanStops.length > 0 ? ` | Stops: ${cleanStops.join(' -> ')}` : ''
+            }${dropoffLocation ? ` | Dropoff: ${dropoffLocation}` : ''}`,
           },
           unit_amount: Math.round(priceCalc.fareAfterDiscount * 100),
         },

@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { type LocationResult } from '../types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type LocationResult, type StopItem } from '../types';
 import {
   getGooglePlacePredictions,
   loadGoogleMapsScript,
@@ -11,6 +11,25 @@ import {
 
 // Nominatim viewbox is left,top,right,bottom i.e. west,north,east,south
 const NOMINATIM_VIEWBOX = `${NEW_ENGLAND_BOUNDS.west},${NEW_ENGLAND_BOUNDS.north},${NEW_ENGLAND_BOUNDS.east},${NEW_ENGLAND_BOUNDS.south}`;
+
+function makeStopId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return `stop-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+async function searchLocationSuggestions(query: string): Promise<string[]> {
+  const googlePredictions = await getGooglePlacePredictions(query);
+  if (googlePredictions && googlePredictions.length > 0) return googlePredictions;
+
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&addressdetails=1&viewbox=${NOMINATIM_VIEWBOX}&bounded=1`
+  );
+  if (res.ok) {
+    const data: LocationResult[] = await res.json();
+    if (data && data.length > 0) return data.map((item) => item.display_name);
+  }
+  return [];
+}
 
 export function useLocationSearch() {
   const [pickup, setPickup] = useState('');
@@ -31,6 +50,11 @@ export function useLocationSearch() {
   const pickupContainerRef = useRef<HTMLDivElement>(null);
   const dropoffContainerRef = useRef<HTMLDivElement>(null);
 
+  // Intermediate ride stops (between pickup and dropoff)
+  const [stops, setStops] = useState<StopItem[]>([]);
+  const stopTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const stopContainersRef = useRef<Map<string, HTMLDivElement | null>>(new Map());
+
   // Pre-load Google Maps SDK on mount if key exists
   useEffect(() => {
     loadGoogleMapsScript();
@@ -45,6 +69,11 @@ export function useLocationSearch() {
       if (dropoffContainerRef.current && !dropoffContainerRef.current.contains(e.target as Node)) {
         setShowDropoffDropdown(false);
       }
+      stopContainersRef.current.forEach((el, id) => {
+        if (el && !el.contains(e.target as Node)) {
+          setStops((prev) => prev.map((s) => (s.id === id ? { ...s, showDropdown: false } : s)));
+        }
+      });
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -195,11 +224,98 @@ export function useLocationSearch() {
   const isBothLocationsFinal =
     pickupFinalized && dropoffFinalized && pickup.trim().length >= 3 && dropoff.trim().length >= 3;
 
+  // Intermediate stop handlers (add/remove/search — same Google Places -> OSM
+  // fallback pattern used for pickup/dropoff above, keyed by stable stop id).
+  const addStop = useCallback(() => {
+    setStops((prev) => [
+      ...prev,
+      { id: makeStopId(), value: '', finalized: false, suggestions: [], loading: false, showDropdown: false },
+    ]);
+  }, []);
+
+  const removeStop = useCallback((id: string) => {
+    const timer = stopTimersRef.current.get(id);
+    if (timer) clearTimeout(timer);
+    stopTimersRef.current.delete(id);
+    stopContainersRef.current.delete(id);
+    setStops((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const updateStop = useCallback((id: string, value: string) => {
+    setStops((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, value, finalized: false, showDropdown: true } : s))
+    );
+
+    const existingTimer = stopTimersRef.current.get(id);
+    if (existingTimer) clearTimeout(existingTimer);
+
+    if (!value || value.trim().length < 2) {
+      setStops((prev) => prev.map((s) => (s.id === id ? { ...s, suggestions: [], showDropdown: false } : s)));
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setStops((prev) => prev.map((s) => (s.id === id ? { ...s, loading: true } : s)));
+      try {
+        const suggestions = await searchLocationSuggestions(value);
+        setStops((prev) =>
+          prev.map((s) =>
+            s.id === id ? { ...s, suggestions, showDropdown: suggestions.length > 0, loading: false } : s
+          )
+        );
+      } catch {
+        setStops((prev) => prev.map((s) => (s.id === id ? { ...s, suggestions: [], loading: false } : s)));
+      }
+    }, 300);
+    stopTimersRef.current.set(id, timer);
+  }, []);
+
+  const selectStopSuggestion = useCallback((id: string, value: string) => {
+    setStops((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, value, finalized: true, suggestions: [], showDropdown: false } : s))
+    );
+  }, []);
+
+  const finalizeStopOnBlur = useCallback((id: string) => {
+    setStops((prev) =>
+      prev.map((s) => (s.id === id && s.value.trim().length >= 3 ? { ...s, finalized: true } : s))
+    );
+  }, []);
+
+  const setShowStopDropdown = useCallback((id: string, show: boolean) => {
+    setStops((prev) => prev.map((s) => (s.id === id ? { ...s, showDropdown: show } : s)));
+  }, []);
+
+  const stopContainerRef = useCallback(
+    (id: string) => (el: HTMLDivElement | null) => {
+      stopContainersRef.current.set(id, el);
+    },
+    []
+  );
+
+  // Finalized, non-empty stop addresses in order — what distance calc, the
+  // map, and the booking payload actually care about. Memoized on a content
+  // key (not just `stops`, which changes reference on every keystroke/loading
+  // update) so consumers relying on referential stability — e.g. the map's
+  // useEffect deps — don't re-fire unless a stop was actually added/removed.
+  const validStopsKey = stops
+    .filter((s) => s.finalized && s.value.trim().length >= 3)
+    .map((s) => s.value.trim())
+    .join('|');
+  const validStops = useMemo(
+    () => (validStopsKey ? validStopsKey.split('|') : []),
+    [validStopsKey]
+  );
+
   const resetLocations = () => {
     setPickup('');
     setDropoff('');
     setPickupFinalized(false);
     setDropoffFinalized(false);
+    stopTimersRef.current.forEach((timer) => clearTimeout(timer));
+    stopTimersRef.current.clear();
+    stopContainersRef.current.clear();
+    setStops([]);
   };
 
   return {
@@ -224,6 +340,15 @@ export function useLocationSearch() {
     pickupContainerRef,
     dropoffContainerRef,
     isBothLocationsFinal,
+    stops,
+    addStop,
+    removeStop,
+    updateStop,
+    selectStopSuggestion,
+    finalizeStopOnBlur,
+    setShowStopDropdown,
+    stopContainerRef,
+    validStops,
     resetLocations,
   };
 }

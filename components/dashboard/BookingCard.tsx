@@ -7,6 +7,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
 import { BookingRecord } from './usePassengerDashboard';
+import { parseStops } from '@/lib/utils/stops';
 
 interface Props {
   booking: BookingRecord;
@@ -121,6 +122,9 @@ export function BookingCard({ booking }: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', fontSize: '0.875rem' }}>
         {[
           { label: 'Pickup Location', value: booking.pickupLocation },
+          ...(parseStops(booking.stops).length > 0
+            ? [{ label: 'Stops', value: parseStops(booking.stops).map((s, i) => `${i + 1}. ${s}`).join('  ') }]
+            : []),
           { label: 'Destination',     value: booking.dropoffLocation || 'City Centre' },
           { label: 'Date & Time',     value: `${booking.pickupDate} at ${booking.pickupTime}` },
         ].map(({ label, value }) => (

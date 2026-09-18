@@ -23,6 +23,9 @@ import type { FLEET_DATA } from '@/data/fleetData';
 interface ConfirmStepProps {
   selectedService: string;
   chosenVehicleObj: (typeof FLEET_DATA)[0];
+  pickup: string;
+  dropoff: string;
+  stops: string[];
   estimatedMiles: number;
   estimatedMinutes: number;
   hourlyCount: number;
@@ -56,6 +59,9 @@ interface ConfirmStepProps {
 export const ConfirmStep: React.FC<ConfirmStepProps> = ({
   selectedService,
   chosenVehicleObj,
+  pickup,
+  dropoff,
+  stops,
   estimatedMiles,
   estimatedMinutes,
   hourlyCount,
@@ -206,6 +212,36 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
             >
               Includes -${currentVehiclePrice.discountAmount.toFixed(2)} discount
             </span>
+          )}
+        </div>
+      </div>
+
+      {/* Route Itinerary (Pickup -> Stops -> Dropoff) */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '16px',
+          padding: '1.15rem 1.5rem',
+          border: '1px solid #cbd5e1',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+        }}
+      >
+        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+          Route Itinerary
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
+          <div>
+            <strong style={{ color: '#b8860b' }}>Pickup:</strong> <span style={{ color: '#0f172a' }}>{pickup}</span>
+          </div>
+          {stops.map((stop, i) => (
+            <div key={i}>
+              <strong style={{ color: '#2563eb' }}>Stop {i + 1}:</strong> <span style={{ color: '#0f172a' }}>{stop}</span>
+            </div>
+          ))}
+          {dropoff && (
+            <div>
+              <strong style={{ color: '#16a34a' }}>Drop-off:</strong> <span style={{ color: '#0f172a' }}>{dropoff}</span>
+            </div>
           )}
         </div>
       </div>

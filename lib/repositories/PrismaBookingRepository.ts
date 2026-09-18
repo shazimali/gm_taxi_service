@@ -80,6 +80,7 @@ export class PrismaBookingRepository implements IBookingRepository {
         vehicleSlug: data.vehicleSlug ?? null,
         pickupLocation: data.pickupLocation,
         dropoffLocation: data.dropoffLocation ?? null,
+        stops: data.stops ?? null,
         pickupDate: data.pickupDate,
         pickupTime: data.pickupTime,
         passengers: data.passengers ?? 1,

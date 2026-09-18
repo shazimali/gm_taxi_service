@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { parseStops } from '@/lib/utils/stops';
 
 interface Booking {
   id: string;
@@ -11,6 +12,7 @@ interface Booking {
   serviceType: string;
   pickupLocation: string;
   dropoffLocation: string | null;
+  stops: string | null;
   pickupDate: string;
   pickupTime: string;
   passengers: number;
@@ -239,6 +241,12 @@ export default function BookingsAdminPage() {
                     <strong className="admin-booking-card__detail-label">Pickup Location:</strong>
                     {b.pickupLocation}
                   </div>
+                  {parseStops(b.stops).length > 0 && (
+                    <div>
+                      <strong className="admin-booking-card__detail-label">Stops:</strong>
+                      {parseStops(b.stops).map((s, i) => `${i + 1}. ${s}`).join('  ')}
+                    </div>
+                  )}
                   {b.dropoffLocation && (
                     <div>
                       <strong className="admin-booking-card__detail-label">Drop-off Location:</strong>

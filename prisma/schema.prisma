@@ -122,6 +122,7 @@ model Booking {
   vehicleSlug        String?
   pickupLocation     String
   dropoffLocation    String?
+  stops              String?       @db.Text // JSON-encoded array of intermediate stop addresses, in ride order
   pickupDate         String
   pickupTime         String
   passengers         Int           @default(1)

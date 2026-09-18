@@ -56,6 +56,14 @@ export function BookingConfirmationEmail({ booking, phoneDisplay }: BookingConfi
               <td style={{ padding: '6px 0', fontWeight: 'bold' }}>Pickup Location:</td>
               <td style={{ padding: '6px 0' }}>{booking.pickupLocation}</td>
             </tr>
+            {Array.isArray(booking.stops) && booking.stops.length > 0 && (
+              <tr>
+                <td style={{ padding: '6px 0', fontWeight: 'bold' }}>Stops:</td>
+                <td style={{ padding: '6px 0' }}>
+                  {booking.stops.map((s: string, i: number) => `${i + 1}. ${s}`).join(', ')}
+                </td>
+              </tr>
+            )}
             {booking.dropoffLocation && (
               <tr>
                 <td style={{ padding: '6px 0', fontWeight: 'bold' }}>Drop-off:</td>

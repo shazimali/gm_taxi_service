@@ -33,6 +33,15 @@ export interface LocationResult {
   display_name: string;
 }
 
+export interface StopItem {
+  id: string;
+  value: string;
+  finalized: boolean;
+  suggestions: string[];
+  loading: boolean;
+  showDropdown: boolean;
+}
+
 export interface PassengerProfile {
   id: string;
   fullName: string;

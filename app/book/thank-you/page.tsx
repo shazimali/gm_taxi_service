@@ -4,6 +4,7 @@ import { CheckCircle2, ShieldCheck, Calendar, MapPin, Car, Phone, Mail, ArrowRig
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { enqueueEmail } from '@/lib/queue/emailQueue';
+import { parseStops } from '@/lib/utils/stops';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
             vehicleSlug: booking.vehicleSlug,
             pickupLocation: booking.pickupLocation,
             dropoffLocation: booking.dropoffLocation,
+            stops: parseStops(booking.stops),
             pickupDate: booking.pickupDate,
             pickupTime: booking.pickupTime,
             passengers: booking.passengers,
@@ -272,6 +274,18 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
                     <span style={{ color: '#ffffff' }}>{booking.pickupLocation}</span>
                   </div>
                 </div>
+
+                {parseStops(booking.stops).length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <MapPin size={16} color="#60a5fa" style={{ flexShrink: 0, marginTop: '3px' }} />
+                    <div>
+                      <span style={{ color: '#a1a1aa', fontSize: '0.75rem', display: 'block' }}>Stops</span>
+                      <span style={{ color: '#ffffff' }}>
+                        {parseStops(booking.stops).map((s, i) => `${i + 1}. ${s}`).join('  ')}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {booking.dropoffLocation && (
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>

@@ -3438,6 +3438,13 @@ p {
   box-shadow: 0 0 0 3px rgba(191, 160, 84, 0.2);
 }
 
+.field-error {
+  display: block;
+  color: #dc2626;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 /* ── Info Column ─────────────────────────────── */
 .contact-info-col {
   display: flex;
