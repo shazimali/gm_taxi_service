@@ -13,7 +13,7 @@ const cspHeader = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' blob: data: https://maps.gstatic.com https://maps.googleapis.com https://*.stripe.com;
   font-src 'self' data: https://fonts.gstatic.com;
-  connect-src 'self' https://maps.googleapis.com https://routes.googleapis.com https://nominatim.openstreetmap.org https://api.stripe.com;
+  connect-src 'self' https://maps.googleapis.com https://places.googleapis.com https://routes.googleapis.com https://nominatim.openstreetmap.org https://api.stripe.com;
   frame-src https://js.stripe.com https://hooks.stripe.com https://www.google.com https://maps.google.com;
   object-src 'none';
   base-uri 'self';
