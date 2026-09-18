@@ -6,7 +6,11 @@ import {
   getGooglePlacePredictions,
   loadGoogleMapsScript,
   reverseGeocodeToAddress,
+  NEW_ENGLAND_BOUNDS,
 } from '@/lib/services/GoogleMapsService';
+
+// Nominatim viewbox is left,top,right,bottom i.e. west,north,east,south
+const NOMINATIM_VIEWBOX = `${NEW_ENGLAND_BOUNDS.west},${NEW_ENGLAND_BOUNDS.north},${NEW_ENGLAND_BOUNDS.east},${NEW_ENGLAND_BOUNDS.south}`;
 
 export function useLocationSearch() {
   const [pickup, setPickup] = useState('');
@@ -67,7 +71,7 @@ export function useLocationSearch() {
 
         // 2. Fallback to OpenStreetMap Nominatim
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup)}&limit=6&addressdetails=1`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickup)}&limit=6&addressdetails=1&viewbox=${NOMINATIM_VIEWBOX}&bounded=1`
         );
         if (res.ok) {
           const data: LocationResult[] = await res.json();
@@ -111,7 +115,7 @@ export function useLocationSearch() {
 
         // 2. Fallback to OpenStreetMap Nominatim
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dropoff)}&limit=6&addressdetails=1`
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dropoff)}&limit=6&addressdetails=1&viewbox=${NOMINATIM_VIEWBOX}&bounded=1`
         );
         if (res.ok) {
           const data: LocationResult[] = await res.json();

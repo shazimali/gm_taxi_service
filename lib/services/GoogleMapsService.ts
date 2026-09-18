@@ -14,7 +14,7 @@ let scriptLoadingPromise: Promise<boolean> | null = null;
  * Bounding box covering the New England states (CT, ME, MA, NH, RI, VT).
  * Used to restrict Places Autocomplete results to this service area.
  */
-const NEW_ENGLAND_BOUNDS = {
+export const NEW_ENGLAND_BOUNDS = {
   south: 40.95,
   west: -73.75,
   north: 47.5,
