@@ -301,7 +301,113 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
         />
       </div>
 
-      {/* ── STEP 2: OPTIONAL DRIVER GRATUITY / TIP ─────────── */}
+      {/* ── STEP 4: TRANSPARENT ORDER SUMMARY BREAKDOWN ──── */}
+      <div
+        style={{
+          backgroundColor: '#0f172a',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          border: '1px solid #334155',
+          boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: '#c5a46d',
+            marginBottom: '1rem',
+          }}
+        >
+          Quote Breakdown &amp; Output Total (Step 3)
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+          {/* Step 1: Base Fare */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#cbd5e1' }}>
+              Fare ({currentVehiclePrice.fareFormula || currentVehiclePrice.formulaLabel})
+            </span>
+            <span style={{ fontWeight: 700, color: '#ffffff' }}>
+              ${currentVehiclePrice.baseFare.toFixed(2)}
+            </span>
+          </div>
+
+          {/* Step 2: Optional Tip */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1' }}>
+            <span>Optional Tip (Customer Selected)</span>
+            <span style={{ fontWeight: 700, color: tipAmount > 0 ? '#c5a46d' : '#94a3b8' }}>
+              {tipAmount > 0 ? `+$${tipAmount.toFixed(2)}` : '$0.00'}
+            </span>
+          </div>
+
+          {/* Step 3: Final Total */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderTop: '2px solid rgba(197, 164, 109, 0.4)',
+              paddingTop: '0.75rem',
+              marginTop: '0.25rem',
+            }}
+          >
+            <span style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff' }}>
+              Final Total (To Pre-Authorize)
+            </span>
+            <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#c5a46d' }}>
+              ${totalWithTip.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Stripe Secure Payment Banner */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '16px',
+          padding: '1.25rem 1.5rem',
+          border: '1px solid #cbd5e1',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+            marginBottom: '0.6rem',
+          }}
+        >
+          <CreditCard size={20} color="#b8860b" />
+          <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>
+            Stripe Hosted Secure Checkout (Cards, Apple Pay &amp; Google Pay)
+          </strong>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: '#fefce8',
+            border: '1px solid #fef08a',
+            borderRadius: '10px',
+            padding: '0.85rem 1rem',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.65rem',
+          }}
+        >
+          <Lock size={18} color="#b8860b" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ fontSize: '0.8rem', color: '#713f12', lineHeight: 1.5 }}>
+            <strong>🔒 Card Authorization Hold:</strong> When you click below, you will be directed to Stripe's encrypted payment page to enter your card details. A hold of <strong>${totalWithTip.toFixed(2)}</strong> is placed in reserve. Funds are <strong>NOT charged</strong> until your ride is completed.
+          </div>
+        </div>
+      </div>
+
+      {/* ── OPTIONAL DRIVER GRATUITY / TIP ─────────── */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -450,112 +556,6 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
 
         <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
           * Note: Tolls are not automatically calculated.
-        </div>
-      </div>
-
-      {/* ── STEP 4: TRANSPARENT ORDER SUMMARY BREAKDOWN ──── */}
-      <div
-        style={{
-          backgroundColor: '#0f172a',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          color: '#ffffff',
-          border: '1px solid #334155',
-          boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-        }}
-      >
-        <div
-          style={{
-            fontSize: '0.75rem',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: '#c5a46d',
-            marginBottom: '1rem',
-          }}
-        >
-          Quote Breakdown &amp; Output Total (Step 3)
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
-          {/* Step 1: Base Fare */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#cbd5e1' }}>
-              Fare ({currentVehiclePrice.fareFormula || currentVehiclePrice.formulaLabel})
-            </span>
-            <span style={{ fontWeight: 700, color: '#ffffff' }}>
-              ${currentVehiclePrice.baseFare.toFixed(2)}
-            </span>
-          </div>
-
-          {/* Step 2: Optional Tip */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1' }}>
-            <span>Optional Tip (Customer Selected)</span>
-            <span style={{ fontWeight: 700, color: tipAmount > 0 ? '#c5a46d' : '#94a3b8' }}>
-              {tipAmount > 0 ? `+$${tipAmount.toFixed(2)}` : '$0.00'}
-            </span>
-          </div>
-
-          {/* Step 3: Final Total */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderTop: '2px solid rgba(197, 164, 109, 0.4)',
-              paddingTop: '0.75rem',
-              marginTop: '0.25rem',
-            }}
-          >
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff' }}>
-              Final Total (To Pre-Authorize)
-            </span>
-            <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#c5a46d' }}>
-              ${totalWithTip.toFixed(2)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Stripe Secure Payment Banner */}
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '16px',
-          padding: '1.25rem 1.5rem',
-          border: '1px solid #cbd5e1',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.65rem',
-            marginBottom: '0.6rem',
-          }}
-        >
-          <CreditCard size={20} color="#b8860b" />
-          <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>
-            Stripe Hosted Secure Checkout (Cards, Apple Pay &amp; Google Pay)
-          </strong>
-        </div>
-
-        <div
-          style={{
-            backgroundColor: '#fefce8',
-            border: '1px solid #fef08a',
-            borderRadius: '10px',
-            padding: '0.85rem 1rem',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '0.65rem',
-          }}
-        >
-          <Lock size={18} color="#b8860b" style={{ flexShrink: 0, marginTop: '2px' }} />
-          <div style={{ fontSize: '0.8rem', color: '#713f12', lineHeight: 1.5 }}>
-            <strong>🔒 Card Authorization Hold:</strong> When you click below, you will be directed to Stripe's encrypted payment page to enter your card details. A hold of <strong>${totalWithTip.toFixed(2)}</strong> is placed in reserve. Funds are <strong>NOT charged</strong> until your ride is completed.
-          </div>
         </div>
       </div>
 

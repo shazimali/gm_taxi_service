@@ -52,6 +52,19 @@ export default function BookingForm() {
     }
   }, []);
 
+  // Reset the "redirecting to Stripe" loading state when the page is restored
+  // from bfcache after the user hits browser Back from Stripe Checkout —
+  // otherwise `loading` stays stuck true forever and the Pay button never recovers.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setLoading(false);
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   // Handle Frictionless Stripe Checkout Redirection
   const handleCheckoutRedirect = async () => {
     if (!fullName.trim() || !email.trim()) {
