@@ -19,11 +19,10 @@ export default async function DashboardPage() {
 
   // 1. Admin Role View
   if (user.role === 'ADMIN') {
-    const [vehicleCount, serviceCount, airportCount, bookingCount, recentBookings] =
+    const [vehicleCount, serviceCount, bookingCount, recentBookings] =
       await Promise.all([
         prisma.vehicle.count(),
         prisma.service.count(),
-        prisma.airport.count(),
         prisma.booking.count(),
         prisma.booking.findMany({
           take: 6,
@@ -49,7 +48,6 @@ export default async function DashboardPage() {
         stats={{
           vehicleCount,
           serviceCount,
-          airportCount,
           bookingCount,
           recentBookings,
         }}

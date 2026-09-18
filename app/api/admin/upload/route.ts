@@ -7,7 +7,6 @@ import { getAuthenticatedAdmin } from '@/lib/auth';
 const ALLOWED_FOLDERS = new Set([
   'services',
   'vehicles',
-  'airports',
   'locations',
   'general',
   'settings',

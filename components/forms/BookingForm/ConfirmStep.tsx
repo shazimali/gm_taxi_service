@@ -6,9 +6,6 @@ import {
   CreditCard,
   Lock,
   ShieldCheck,
-  Tag,
-  Check,
-  X,
   HeartHandshake,
   ArrowRight,
   User,
@@ -35,15 +32,7 @@ interface ConfirmStepProps {
   phone: string;
   specialRequests: string;
   setSpecialRequests: (val: string) => void;
-  // Step 2: Corporate discount
-  corporateAccountCode: string;
-  setCorporateAccountCode: (code: string) => void;
-  corporateAccount: { id: string; name: string; accountCode: string; discountPct: number } | null;
-  corporateLoading: boolean;
-  corporateError: string;
-  applyCorporateCode: (code: string) => Promise<any>;
-  removeCorporateCode: () => void;
-  // Step 3 & 4: Tip selection and Total
+  // Step 2 & 3: Tip selection and Total
   tipPercent: number | null;
   setTipPercent: (pct: number | null) => void;
   customTipAmount: number | null;
@@ -71,13 +60,6 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
   phone,
   specialRequests,
   setSpecialRequests,
-  corporateAccountCode,
-  setCorporateAccountCode,
-  corporateAccount,
-  corporateLoading,
-  corporateError,
-  applyCorporateCode,
-  removeCorporateCode,
   tipPercent,
   setTipPercent,
   customTipAmount,
@@ -89,7 +71,6 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
   onSubmitCheckout,
   onBack,
 }) => {
-  const [enteredCode, setEnteredCode] = useState(corporateAccountCode || '');
   const [showCustomTipInput, setShowCustomTipInput] = useState(false);
 
   return (
@@ -201,18 +182,6 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
           <strong style={{ color: '#c5a46d', fontSize: '1.2rem', fontWeight: 800 }}>
             ${totalWithTip.toFixed(2)}
           </strong>
-          {currentVehiclePrice.discountAmount > 0 && (
-            <span
-              style={{
-                display: 'block',
-                fontSize: '0.7rem',
-                color: '#22c55e',
-                fontWeight: 700,
-              }}
-            >
-              Includes -${currentVehiclePrice.discountAmount.toFixed(2)} discount
-            </span>
-          )}
         </div>
       </div>
 
@@ -332,134 +301,7 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
         />
       </div>
 
-      {/* ── STEP 2: CORPORATE / ACCOUNT DISCOUNT ──────────── */}
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '16px',
-          padding: '1.25rem 1.5rem',
-          border: '1px solid #cbd5e1',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '0.6rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, color: '#0f172a', fontSize: '0.925rem' }}>
-            <Tag size={18} color="#b8860b" />
-            <span>Corporate / Account Discount (Step 2)</span>
-          </div>
-          {corporateAccount && (
-            <span
-              style={{
-                backgroundColor: '#dcfce7',
-                color: '#15803d',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '20px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-              }}
-            >
-              <Check size={14} /> {corporateAccount.discountPct}% Discount Applied
-            </span>
-          )}
-        </div>
-
-        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.85rem 0' }}>
-          If your booking is attached to a corporate account or corporate partner program, enter your account code below.
-        </p>
-
-        {corporateAccount ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.75rem 1rem',
-              backgroundColor: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              borderRadius: '10px',
-            }}
-          >
-            <div>
-              <strong style={{ color: '#166534', fontSize: '0.875rem' }}>
-                {corporateAccount.name} ({corporateAccount.accountCode})
-              </strong>
-              <div style={{ fontSize: '0.775rem', color: '#15803d' }}>
-                {corporateAccount.discountPct}% off ride fare (Savings: -${currentVehiclePrice.discountAmount.toFixed(2)})
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={removeCorporateCode}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: '#dc2626',
-                fontWeight: 700,
-                fontSize: '0.775rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-              }}
-            >
-              <X size={14} /> Remove
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', gap: '0.6rem' }}>
-            <input
-              type="text"
-              value={enteredCode}
-              onChange={(e) => setEnteredCode(e.target.value.toUpperCase())}
-              placeholder="e.g. CORP2024 or PARTNER10"
-              className="form-input"
-              style={{ flex: 1, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (enteredCode.trim()) applyCorporateCode(enteredCode);
-                }
-              }}
-            />
-            <button
-              type="button"
-              disabled={corporateLoading || !enteredCode.trim()}
-              onClick={() => applyCorporateCode(enteredCode)}
-              style={{
-                backgroundColor: '#b8860b',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '0 1.25rem',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                cursor: corporateLoading ? 'not-allowed' : 'pointer',
-                opacity: corporateLoading || !enteredCode.trim() ? 0.65 : 1,
-              }}
-            >
-              {corporateLoading ? 'Validating...' : 'Apply Code'}
-            </button>
-          </div>
-        )}
-
-        {corporateError && (
-          <div style={{ color: '#dc2626', fontSize: '0.775rem', marginTop: '0.5rem', fontWeight: 600 }}>
-            {corporateError}
-          </div>
-        )}
-      </div>
-
-      {/* ── STEP 3: OPTIONAL DRIVER GRATUITY / TIP ─────────── */}
+      {/* ── STEP 2: OPTIONAL DRIVER GRATUITY / TIP ─────────── */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -509,7 +351,7 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
             const isSelected = !showCustomTipInput && tipPercent === opt.pct;
             const calcDollars =
               opt.pct > 0
-                ? Math.round(currentVehiclePrice.fareAfterDiscount * (opt.pct / 100) * 100) / 100
+                ? Math.round(currentVehiclePrice.totalBeforeTip * (opt.pct / 100) * 100) / 100
                 : 0;
 
             return (
@@ -632,7 +474,7 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
             marginBottom: '1rem',
           }}
         >
-          Quote Breakdown &amp; Output Total (Step 4)
+          Quote Breakdown &amp; Output Total (Step 3)
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
@@ -646,34 +488,7 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
             </span>
           </div>
 
-          {/* Step 2: Corporate Discount */}
-          {currentVehiclePrice.discountAmount > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#4ade80' }}>
-              <span>Corporate Discount ({corporateAccount?.discountPct}% off)</span>
-              <span style={{ fontWeight: 700 }}>
-                −${currentVehiclePrice.discountAmount.toFixed(2)}
-              </span>
-            </div>
-          )}
-
-          {/* Subtotal */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              paddingTop: '0.5rem',
-              color: '#94a3b8',
-            }}
-          >
-            <span>Subtotal (Ride Fare)</span>
-            <span style={{ fontWeight: 700, color: '#ffffff' }}>
-              ${currentVehiclePrice.fareAfterDiscount.toFixed(2)}
-            </span>
-          </div>
-
-          {/* Step 3: Optional Tip */}
+          {/* Step 2: Optional Tip */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1' }}>
             <span>Optional Tip (Customer Selected)</span>
             <span style={{ fontWeight: 700, color: tipAmount > 0 ? '#c5a46d' : '#94a3b8' }}>
@@ -681,7 +496,7 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
             </span>
           </div>
 
-          {/* Step 4: Final Total */}
+          {/* Step 3: Final Total */}
           <div
             style={{
               display: 'flex',

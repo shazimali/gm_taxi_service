@@ -2,15 +2,14 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { 
-  Car, 
-  Sparkles, 
-  Plane, 
-  CalendarCheck, 
-  ArrowRight, 
-  Search, 
-  Moon, 
-  Bell 
+import {
+  Car,
+  Sparkles,
+  CalendarCheck,
+  ArrowRight,
+  Search,
+  Moon,
+  Bell
 } from 'lucide-react';
 import { UserSession } from '@/lib/auth';
 import '@/app/admin/admin.css';
@@ -20,7 +19,6 @@ import LogoutButton from '@/app/admin/LogoutButton';
 interface AdminStats {
   vehicleCount: number;
   serviceCount: number;
-  airportCount: number;
   bookingCount: number;
   recentBookings: Array<{
     id: string;
@@ -150,17 +148,6 @@ export default function AdminDashboardView({
               <div className="admin-stat-card__label">Active Services</div>
               <Link href="/admin/services" className="admin-stat-card__link">
                 <span>Services Catalog</span> <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            <div className="admin-stat-card">
-              <div className="admin-stat-card__icon-wrap">
-                <Plane size={24} />
-              </div>
-              <div className="admin-stat-card__value">{stats.airportCount}</div>
-              <div className="admin-stat-card__label">Airports &amp; Hubs</div>
-              <Link href="/admin/airports" className="admin-stat-card__link">
-                <span>Airport Locations</span> <ArrowRight size={14} />
               </Link>
             </div>
 

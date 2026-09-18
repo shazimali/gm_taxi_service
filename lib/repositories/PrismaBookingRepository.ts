@@ -93,8 +93,6 @@ export class PrismaBookingRepository implements IBookingRepository {
         paymentStatus: data.paymentStatus ?? 'PENDING',
         estimatedPrice: data.estimatedPrice ?? null,
         fareMode: data.fareMode ?? null,
-        discountApplied: data.discountApplied ?? null,
-        corporateAccountId: data.corporateAccountId ?? null,
         tipPercent: data.tipPercent ?? null,
         tipAmount: data.tipAmount ?? null,
       },

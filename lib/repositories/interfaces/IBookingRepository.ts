@@ -37,8 +37,6 @@ export interface Booking {
   paymentStatus: string;
   estimatedPrice: number | null;
   fareMode?: string | null;
-  discountApplied?: number | null;
-  corporateAccountId?: string | null;
   tipPercent?: number | null;
   tipAmount?: number | null;
   createdAt: Date;
@@ -67,8 +65,6 @@ export interface CreateBookingData {
   paymentStatus?: string;
   estimatedPrice?: number | null;
   fareMode?: string | null;
-  discountApplied?: number | null;
-  corporateAccountId?: string | null;
   tipPercent?: number | null;
   tipAmount?: number | null;
 }

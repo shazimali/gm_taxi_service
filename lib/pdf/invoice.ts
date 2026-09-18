@@ -24,9 +24,8 @@ export function generateInvoicePdf(booking: any): Promise<Buffer> {
     doc.on('error', reject);
 
     const tipAmount = Number(booking.tipAmount) || 0;
-    const discountApplied = Number(booking.discountApplied) || 0;
     const total = Number(booking.estimatedPrice) || 0;
-    const baseFare = Math.max(total - tipAmount + discountApplied, 0);
+    const baseFare = Math.max(total - tipAmount, 0);
 
     // ── Header ───────────────────────────────────────────────
     const logoPath = path.join(process.cwd(), 'public', 'images', 'logo.png');
@@ -132,9 +131,6 @@ export function generateInvoicePdf(booking: any): Promise<Buffer> {
     };
 
     chargeRow('Base Fare', money(baseFare));
-    if (discountApplied > 0) {
-      chargeRow('Discount', `-${money(discountApplied)}`);
-    }
     if (tipAmount > 0) {
       chargeRow('Chauffeur Gratuity', money(tipAmount));
     }

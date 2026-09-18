@@ -23,16 +23,6 @@ export interface Vehicle {
   displayOrder: number;
   createdAt: Date;
   updatedAt: Date;
-  zoneRoutes?: Array<{
-    id: string;
-    vehicleId: string;
-    name: string;
-    pickupKeywords: string;
-    dropoffKeywords: string;
-    flatRate: number;
-    isActive: boolean;
-    displayOrder: number;
-  }>;
 }
 
 export interface CreateVehicleData {

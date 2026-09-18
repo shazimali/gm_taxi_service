@@ -28,8 +28,6 @@ export async function sendBookingQuote(prevState: BookingState, formData: FormDa
   const paymentStatus = formData.get('paymentStatus')?.toString() || (stripePaymentIntentId ? 'HOLD_PLACED' : 'PENDING');
   const estimatedPrice = Number(formData.get('estimatedPrice')?.toString()) || null;
   const fareMode = formData.get('fareMode')?.toString() || null;
-  const discountApplied = formData.get('discountApplied') ? Number(formData.get('discountApplied')) : null;
-  const corporateAccountId = formData.get('corporateAccountId')?.toString() || null;
   const tipPercent = formData.get('tipPercent') !== null ? Number(formData.get('tipPercent')) : null;
   const tipAmount = formData.get('tipAmount') !== null ? Number(formData.get('tipAmount')) : null;
 
@@ -51,8 +49,6 @@ export async function sendBookingQuote(prevState: BookingState, formData: FormDa
     paymentStatus,
     estimatedPrice,
     fareMode,
-    discountApplied,
-    corporateAccountId,
     tipPercent,
     tipAmount,
   });

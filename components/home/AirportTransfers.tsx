@@ -17,25 +17,50 @@ interface TravelRow {
   zoneCls: string;
 }
 
+const AIRPORTS: AirportItem[] = [
+  {
+    code: 'BOS',
+    name: 'Logan International Airport',
+    desc: "Boston's primary hub — all domestic & international terminals covered.",
+  },
+  {
+    code: 'BED',
+    name: 'Hanscom Field',
+    desc: 'Private aviation & corporate FBO transfers to/from Bedford, MA.',
+  },
+  {
+    code: 'ORH',
+    name: 'Worcester Regional Airport',
+    desc: 'Convenient alternative to Boston — avoids Logan congestion.',
+  },
+  {
+    code: 'MHT',
+    name: 'Manchester-Boston Regional',
+    desc: "New Hampshire's busiest airport — popular budget-carrier hub.",
+  },
+  {
+    code: 'PVD',
+    name: 'T.F. Green International',
+    desc: 'Providence, RI — serving Southwest & JetBlue routes south of Boston.',
+  },
+  {
+    code: 'PSM',
+    name: 'Portsmouth International',
+    desc: 'Pease Tradeport, NH — ideal for Seacoast & northern New England.',
+  },
+];
+
+const FALLBACK_TRAVEL_ROWS: TravelRow[] = [
+  { location: 'Arlington, MA', distance: '11 miles', avgTime: '25 – 40m', price: '$75', zone: 'Meeting Point', zoneCls: 'zone-a' },
+  { location: 'Newton, MA', distance: '14 miles', avgTime: '30 – 45m', price: '$85', zone: 'Terminal C/E', zoneCls: 'zone-b' },
+  { location: 'Cambridge, MA', distance: '6 miles', avgTime: '20 – 30m', price: '$65', zone: 'Limo Stand', zoneCls: 'zone-a' },
+  { location: 'Lexington, MA', distance: '17 miles', avgTime: '35 – 50m', price: '$95', zone: 'Terminal B', zoneCls: 'zone-b' },
+  { location: 'Wellesley, MA', distance: '18 miles', avgTime: '35 – 50m', price: '$105', zone: 'Meeting Point', zoneCls: 'zone-a' },
+  { location: 'Westwood, MA', distance: '22 miles', avgTime: '40 – 55m', price: '$115', zone: 'Terminal B/C', zoneCls: 'zone-b' },
+];
+
 export default async function AirportTransfers() {
-  let airports: AirportItem[] = [];
   let travelRows: TravelRow[] = [];
-
-  try {
-    const dbAirports = await prisma.airport.findMany({
-      orderBy: { displayOrder: 'asc' },
-    });
-
-    if (dbAirports && dbAirports.length > 0) {
-      airports = dbAirports.map((ap) => ({
-        code: ap.code,
-        name: ap.name,
-        desc: ap.description || '',
-      }));
-    }
-  } catch (error) {
-    console.error('Error fetching airports from DB for home page:', error);
-  }
 
   try {
     const dbRates = await prisma.airportTravelRate.findMany({
@@ -43,65 +68,20 @@ export default async function AirportTransfers() {
       orderBy: { displayOrder: 'asc' },
     });
 
-    if (dbRates && dbRates.length > 0) {
-      travelRows = dbRates.map((r, idx) => ({
-        location: r.location,
-        distance: r.distance,
-        avgTime: r.time,
-        price: r.price,
-        zone: r.pickupZone,
-        zoneCls: idx % 2 === 0 ? 'zone-a' : 'zone-b',
-      }));
-    }
+    travelRows = dbRates.map((r, idx) => ({
+      location: r.location,
+      distance: r.distance,
+      avgTime: r.time,
+      price: r.price,
+      zone: r.pickupZone,
+      zoneCls: idx % 2 === 0 ? 'zone-a' : 'zone-b',
+    }));
   } catch (error) {
     console.error('Error fetching travel rates from DB for home page:', error);
   }
 
-  // Fallback if DB returns empty
-  if (airports.length === 0) {
-    airports = [
-      {
-        code: 'BOS',
-        name: 'Logan International Airport',
-        desc: "Boston's primary hub — all domestic & international terminals covered.",
-      },
-      {
-        code: 'BED',
-        name: 'Hanscom Field',
-        desc: 'Private aviation & corporate FBO transfers to/from Bedford, MA.',
-      },
-      {
-        code: 'ORH',
-        name: 'Worcester Regional Airport',
-        desc: 'Convenient alternative to Boston — avoids Logan congestion.',
-      },
-      {
-        code: 'MHT',
-        name: 'Manchester-Boston Regional',
-        desc: "New Hampshire's busiest airport — popular budget-carrier hub.",
-      },
-      {
-        code: 'PVD',
-        name: 'T.F. Green International',
-        desc: 'Providence, RI — serving Southwest & JetBlue routes south of Boston.',
-      },
-      {
-        code: 'PSM',
-        name: 'Portsmouth International',
-        desc: 'Pease Tradeport, NH — ideal for Seacoast & northern New England.',
-      },
-    ];
-  }
-
   if (travelRows.length === 0) {
-    travelRows = [
-      { location: 'Arlington, MA', distance: '11 miles', avgTime: '25 – 40m', price: '$75', zone: 'Meeting Point', zoneCls: 'zone-a' },
-      { location: 'Newton, MA', distance: '14 miles', avgTime: '30 – 45m', price: '$85', zone: 'Terminal C/E', zoneCls: 'zone-b' },
-      { location: 'Cambridge, MA', distance: '6 miles', avgTime: '20 – 30m', price: '$65', zone: 'Limo Stand', zoneCls: 'zone-a' },
-      { location: 'Lexington, MA', distance: '17 miles', avgTime: '35 – 50m', price: '$95', zone: 'Terminal B', zoneCls: 'zone-b' },
-      { location: 'Wellesley, MA', distance: '18 miles', avgTime: '35 – 50m', price: '$105', zone: 'Meeting Point', zoneCls: 'zone-a' },
-      { location: 'Westwood, MA', distance: '22 miles', avgTime: '40 – 55m', price: '$115', zone: 'Terminal B/C', zoneCls: 'zone-b' },
-    ];
+    travelRows = FALLBACK_TRAVEL_ROWS;
   }
 
   return (
@@ -120,7 +100,7 @@ export default async function AirportTransfers() {
 
         {/* Airport Cards Grid */}
         <div className="airport-grid" role="list" aria-label="Airports we serve">
-          {airports.map((ap) => (
+          {AIRPORTS.map((ap) => (
             <Link
               key={ap.code}
               href="/book"

@@ -23,12 +23,6 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async findBySlug(slug: string): Promise<Vehicle | null> {
     const vehicle = await prisma.vehicle.findUnique({
       where: { slug },
-      include: {
-        zoneRoutes: {
-          where: { isActive: true },
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
     });
     return (vehicle as unknown as Vehicle) ?? null;
   }
@@ -36,11 +30,6 @@ export class PrismaVehicleRepository implements IVehicleRepository {
   async findById(id: string): Promise<Vehicle | null> {
     const vehicle = await prisma.vehicle.findUnique({
       where: { id },
-      include: {
-        zoneRoutes: {
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
     });
     return (vehicle as unknown as Vehicle) ?? null;
   }

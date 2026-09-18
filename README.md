@@ -30,7 +30,6 @@ A modern, high-performance web platform and reservation system for **GM Limo Ser
   - Payment action buttons: **"💳 Capture Payment"** (captures held funds upon destination arrival) and **"❌ Release Hold"** (cancels pre-authorization with $0 fee).
 - **Fleet Catalog (`/admin/fleet`)**: Create, edit, upload photos, and re-order luxury vehicles.
 - **Services Catalog (`/admin/services`)**: Create and edit executive chauffeur service offerings.
-- **Airports Catalog (`/admin/airports`)**: Manage airport transfer estimates (BOS, BED, PVD, MHT, ORH).
 - **Site Settings (`/admin/settings`)**: Dynamic phone numbers, dispatch email addresses, and hero titles.
 
 ### 📩 Asynchronous Redis Email Queue (BullMQ + Nodemailer)
@@ -63,7 +62,7 @@ A modern, high-performance web platform and reservation system for **GM Limo Ser
 gm-taxi-service/
 ├── app/
 │   ├── (public pages)/          # Home (/), About, Fleet, Services, Book, Contact
-│   ├── admin/                   # Admin Panel (Bookings, Fleet, Services, Airports, Settings)
+│   ├── admin/                   # Admin Panel (Bookings, Fleet, Services, Settings)
 │   ├── passenger/               # Passenger Login, Register & Dashboard
 │   ├── api/
 │   │   ├── admin/               # Admin API routes (Bookings capture/cancel, Uploads, Fleet, Services)

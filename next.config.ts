@@ -5,9 +5,11 @@ import type { NextConfig } from "next";
 // inline JSON-LD (app/layout.tsx) and inline styles throughout — tightening
 // further would require a nonce-based CSP generated in proxy.ts, which forces
 // every page to dynamic rendering.
+const isDev = process.env.NODE_ENV !== 'production';
+
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://js.stripe.com;
+  script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://maps.googleapis.com https://js.stripe.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' blob: data: https://maps.gstatic.com https://maps.googleapis.com https://*.stripe.com;
   font-src 'self' data: https://fonts.gstatic.com;

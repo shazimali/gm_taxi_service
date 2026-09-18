@@ -220,7 +220,7 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
             Calculated Fare:
           </span>
           <strong style={{ fontSize: '1.25rem', color: '#c5a46d', fontWeight: 900 }}>
-            ${(currentVehiclePrice.fareAfterDiscount ?? currentVehiclePrice.baseFare ?? currentVehiclePrice.totalPrice).toFixed(2)}
+            ${currentVehiclePrice.baseFare.toFixed(2)}
           </strong>
         </div>
       </div>
@@ -252,7 +252,7 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
           style={{ flex: 2, height: '52px', fontSize: '0.95rem' }}
         >
           <span>
-            Proceed with {chosenVehicle?.name} — ${(currentVehiclePrice.fareAfterDiscount ?? currentVehiclePrice.baseFare ?? currentVehiclePrice.totalPrice).toFixed(2)}
+            Proceed with {chosenVehicle?.name} — ${currentVehiclePrice.baseFare.toFixed(2)}
           </span>
           <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
         </button>

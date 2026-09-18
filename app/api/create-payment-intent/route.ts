@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { getCurrentPassenger } from '@/lib/auth';
-import { vehicleRepository, corporateAccountRepository } from '@/lib/repositories';
+import { vehicleRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services/PricingService';
 import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
 import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
@@ -27,7 +27,6 @@ export async function POST(req: Request) {
       hourlyCount,
       pickupLocation,
       dropoffLocation,
-      corporateAccountCode,
     } = body;
 
     // ── Require authentication ────────────────────────────────────────────
@@ -43,16 +42,6 @@ export async function POST(req: Request) {
 
     const vehicleConfig = toVehiclePricingConfig(vehicle);
 
-    let corporateDiscountPct = 0;
-    let corporateAccountId: string | null = null;
-    if (corporateAccountCode?.trim()) {
-      const account = await corporateAccountRepository.findByCode(corporateAccountCode);
-      if (account && account.isActive) {
-        corporateDiscountPct = account.discountPct;
-        corporateAccountId = account.id;
-      }
-    }
-
     const parsedMinutes = Number(estimatedMinutes);
     const parsedMiles = Number(estimatedMiles);
     const parsedHours = Number(hourlyCount);
@@ -60,16 +49,13 @@ export async function POST(req: Request) {
     const priceCalc = pricingService.calculate({
       serviceType: normalizeServiceType(serviceType),
       vehicleConfig,
-      pickup: pickupLocation || '',
-      dropoff: dropoffLocation || '',
       estimatedMinutes: !isNaN(parsedMinutes) && parsedMinutes > 0 ? parsedMinutes : 0,
       estimatedMiles: !isNaN(parsedMiles) && parsedMiles > 0 ? parsedMiles : 0,
       hourlyCount: !isNaN(parsedHours) && parsedHours > 0 ? parsedHours : 2,
-      corporateDiscountPct,
     });
 
-    // Stripe hold covers the fare after discount (tip is customer selected at checkout)
-    const holdAmount = priceCalc.fareAfterDiscount;
+    // Stripe hold covers the calculated fare (tip is customer selected at checkout)
+    const holdAmount = priceCalc.totalBeforeTip;
 
     if (holdAmount < MIN_AMOUNT_USD || holdAmount > MAX_AMOUNT_USD) {
       return NextResponse.json(
@@ -90,8 +76,6 @@ export async function POST(req: Request) {
         calculatedPrice: priceCalc.totalPrice,
         fareMode: priceCalc.fareMode,
         baseFare: priceCalc.baseFare.toString(),
-        discountAmount: priceCalc.discountAmount.toString(),
-        corporateAccountId: corporateAccountId || '',
         pickupLocation: pickupLocation || '',
         dropoffLocation: dropoffLocation || '',
         passengerId: passenger.id,

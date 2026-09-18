@@ -3,10 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { signPassengerToken } from '@/lib/auth';
-import {
-  vehicleRepository,
-  corporateAccountRepository,
-} from '@/lib/repositories';
+import { vehicleRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services';
 import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
 import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
@@ -41,7 +38,6 @@ export async function POST(req: Request) {
       estimatedMinutes,
       estimatedMiles,
       hourlyCount,
-      corporateAccountCode,
       tipPercent,
       tipAmount = 0,
     } = body;
@@ -72,17 +68,6 @@ export async function POST(req: Request) {
 
     const vehicleConfig = toVehiclePricingConfig(vehicle);
 
-    // 3. Corporate account verification if code provided
-    let corporateDiscountPct = 0;
-    let corporateAccountId: string | null = null;
-    if (corporateAccountCode?.trim()) {
-      const account = await corporateAccountRepository.findByCode(corporateAccountCode.trim());
-      if (account && account.isActive) {
-        corporateDiscountPct = account.discountPct;
-        corporateAccountId = account.id;
-      }
-    }
-
     const parsedMinutes = Number(estimatedMinutes);
     const parsedMiles = Number(estimatedMiles);
     const parsedHours = Number(hourlyCount);
@@ -90,16 +75,13 @@ export async function POST(req: Request) {
     const priceCalc = pricingService.calculate({
       serviceType: normalizeServiceType(serviceType),
       vehicleConfig,
-      pickup: pickupLocation || '',
-      dropoff: dropoffLocation || '',
       estimatedMinutes: !isNaN(parsedMinutes) && parsedMinutes > 0 ? parsedMinutes : 0,
       estimatedMiles: !isNaN(parsedMiles) && parsedMiles > 0 ? parsedMiles : 0,
       hourlyCount: !isNaN(parsedHours) && parsedHours > 0 ? parsedHours : 2,
-      corporateDiscountPct,
     });
 
     const parsedTip = Number(tipAmount) > 0 ? Number(tipAmount) : 0;
-    const finalTotal = Math.round((priceCalc.fareAfterDiscount + parsedTip) * 100) / 100;
+    const finalTotal = Math.round((priceCalc.totalBeforeTip + parsedTip) * 100) / 100;
 
     if (finalTotal < MIN_AMOUNT_USD || finalTotal > MAX_AMOUNT_USD) {
       return NextResponse.json(
@@ -190,8 +172,6 @@ export async function POST(req: Request) {
         status: 'PENDING',
         estimatedPrice: finalTotal,
         fareMode: priceCalc.fareMode,
-        discountApplied: priceCalc.discountAmount,
-        corporateAccountId,
         tipPercent: tipPercent !== undefined && tipPercent !== null ? Number(tipPercent) : null,
         tipAmount: parsedTip,
       },
@@ -212,7 +192,7 @@ export async function POST(req: Request) {
               cleanStops.length > 0 ? ` | Stops: ${cleanStops.join(' -> ')}` : ''
             }${dropoffLocation ? ` | Dropoff: ${dropoffLocation}` : ''}`,
           },
-          unit_amount: Math.round(priceCalc.fareAfterDiscount * 100),
+          unit_amount: Math.round(priceCalc.totalBeforeTip * 100),
         },
         quantity: 1,
       },

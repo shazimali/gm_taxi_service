@@ -3,27 +3,21 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Car, 
-  Sparkles, 
-  Plane, 
-  CalendarCheck, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Car,
+  Sparkles,
+  CalendarCheck,
+  Settings,
   ExternalLink,
   MapPin,
   Route,
-  Map,
-  Building2,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard',                label: 'Dashboard Overview',   icon: LayoutDashboard },
   { href: '/admin/fleet',              label: 'Fleet Management',     icon: Car },
-  { href: '/admin/zone-routes',        label: 'Zone Flat Corridors',  icon: Map },
-  { href: '/admin/corporate-accounts', label: 'Corporate Accounts',   icon: Building2 },
   { href: '/admin/services',           label: 'Services Catalog',     icon: Sparkles },
-  { href: '/admin/airports',           label: 'Airports & Rates',     icon: Plane },
   { href: '/admin/travel-rates',       label: 'Travel Times & Rates', icon: Route },
   { href: '/admin/locations',          label: 'Locations',            icon: MapPin },
   { href: '/admin/bookings',           label: 'Customer Bookings',    icon: CalendarCheck },

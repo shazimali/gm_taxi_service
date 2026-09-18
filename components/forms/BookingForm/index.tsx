@@ -84,7 +84,6 @@ export default function BookingForm() {
           estimatedMinutes: pricing.estimatedMinutes,
           estimatedMiles: pricing.estimatedMiles,
           hourlyCount: pricing.hourlyCount,
-          corporateAccountCode: pricing.corporateAccountCode || undefined,
           tipPercent: pricing.tipPercent,
           tipAmount: pricing.tipAmount,
         }),
@@ -255,15 +254,7 @@ export default function BookingForm() {
               phone={phone}
               specialRequests={specialRequests}
               setSpecialRequests={setSpecialRequests}
-              // Corporate discount (Step 2)
-              corporateAccountCode={pricing.corporateAccountCode}
-              setCorporateAccountCode={pricing.setCorporateAccountCode}
-              corporateAccount={pricing.corporateAccount}
-              corporateLoading={pricing.corporateLoading}
-              corporateError={pricing.corporateError}
-              applyCorporateCode={pricing.applyCorporateCode}
-              removeCorporateCode={pricing.removeCorporateCode}
-              // Tip (Step 3) & Final Total (Step 4)
+              // Tip (Step 2) & Final Total (Step 3)
               tipPercent={pricing.tipPercent}
               setTipPercent={pricing.setTipPercent}
               customTipAmount={pricing.customTipAmount}
