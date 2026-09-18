@@ -14,11 +14,9 @@ export interface Vehicle {
   passengerCapacity: number;
   luggageCapacity: number;
   rateHourly: number | null;
-  minHours: number;
-  ratePerMile: number | null;
-  ratePerMinute: number | null;
-  baseFee: number | null;
-  minimumTripFee: number;
+  baseFare: number | null;
+  baseMiles: number | null;
+  perMileRate: number | null;
   description: string | null;
   image: string | null;
   features: string | null; // JSON-serialised string[]
@@ -45,11 +43,9 @@ export interface CreateVehicleData {
   passengerCapacity?: number;
   luggageCapacity?: number;
   rateHourly?: number | null;
-  minHours?: number;
-  ratePerMile?: number | null;
-  ratePerMinute?: number | null;
-  baseFee?: number | null;
-  minimumTripFee?: number;
+  baseFare?: number | null;
+  baseMiles?: number | null;
+  perMileRate?: number | null;
   description?: string | null;
   image?: string | null;
   features?: string | null;

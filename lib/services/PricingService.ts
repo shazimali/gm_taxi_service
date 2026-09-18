@@ -4,10 +4,11 @@
  * S — Single Responsibility: implements the 4-step pricing engine.
  *
  * STEP 1 — Determine the Fare
- *   1A  Hourly:     billableHours = max(minHours, requested); fare = rate × hours
+ *   1A  Hourly:     fare = rate × requested hours (no minimum)
  *   1B  Zone Flat:  pickup+dropoff match a ZoneRoute → fare = flatRate (nothing added)
- *   1C  Metered:    fare = baseFee + (miles × ratePerMile) + (mins × ratePerMinute)
- *                   fare = max(fare, minimumTripFee)
+ *   1C  Metered:    estimatedMiles <= baseMiles → fare = baseFare
+ *                   estimatedMiles >  baseMiles → fare = estimatedMiles × perMileRate
+ *                   (full distance, not just the overage past baseMiles)
  *
  * STEP 2 — Corporate Discount
  *   discount = baseFare × (discountPct / 100)
@@ -27,12 +28,10 @@ import type {
 } from './interfaces/IPricingService';
 
 // ── Sensible fallback rates used when DB fields are null ─────────────────────
-const FALLBACK_RATE_HOURLY   = 85;
-const FALLBACK_MIN_HOURS     = 2;
-const FALLBACK_RATE_PER_MILE = 3.5;
-const FALLBACK_RATE_PER_MIN  = 0.65;
-const FALLBACK_BASE_FEE      = 15;
-const FALLBACK_MIN_TRIP_FEE  = 65;
+const FALLBACK_RATE_HOURLY = 85;
+const FALLBACK_BASE_FARE = 65;
+const FALLBACK_BASE_MILES = 10;
+const FALLBACK_PER_MILE_RATE = 4;
 
 // ── Zone matching helper ──────────────────────────────────────────────────────
 function matchesKeywords(address: string, keywords: string[]): boolean {
@@ -69,13 +68,11 @@ export class PricingService implements IPricingService {
     } = params;
 
     const cfg = {
-      rateHourly:     vehicleConfig.rateHourly     ?? FALLBACK_RATE_HOURLY,
-      minHours:       vehicleConfig.minHours        ?? FALLBACK_MIN_HOURS,
-      ratePerMile:    vehicleConfig.ratePerMile     ?? FALLBACK_RATE_PER_MILE,
-      ratePerMinute:  vehicleConfig.ratePerMinute   ?? FALLBACK_RATE_PER_MIN,
-      baseFee:        vehicleConfig.baseFee         ?? FALLBACK_BASE_FEE,
-      minimumTripFee: vehicleConfig.minimumTripFee  ?? FALLBACK_MIN_TRIP_FEE,
-      zoneRoutes:     vehicleConfig.zoneRoutes      ?? [],
+      rateHourly:   vehicleConfig.rateHourly ?? FALLBACK_RATE_HOURLY,
+      baseFare:     vehicleConfig.baseFare ?? FALLBACK_BASE_FARE,
+      baseMiles:    vehicleConfig.baseMiles ?? FALLBACK_BASE_MILES,
+      perMileRate:  vehicleConfig.perMileRate ?? FALLBACK_PER_MILE_RATE,
+      zoneRoutes:   vehicleConfig.zoneRoutes ?? [],
     };
 
     let baseFare       = 0;
@@ -86,14 +83,11 @@ export class PricingService implements IPricingService {
 
     // ── STEP 1A — Hourly ────────────────────────────────────────────────────
     if (serviceType === 'hourly') {
-      const billableHours = Math.max(cfg.minHours, hourlyCount);
+      const billableHours = hourlyCount;
       baseFare = cfg.rateHourly * billableHours;
       fareMode = 'hourly';
       fareFormula = `$${cfg.rateHourly}/hr × ${billableHours} hr${billableHours !== 1 ? 's' : ''}`;
       fareDurationLabel = `${billableHours} hr${billableHours !== 1 ? 's' : ''}`;
-      if (hourlyCount < cfg.minHours) {
-        fareDurationLabel += ` (${cfg.minHours}-hr minimum)`;
-      }
     } else {
       // ── STEP 1B — Point-to-Point: Zone Match ─────────────────────────────
       const matchedZone = findMatchingZone(pickup, dropoff, cfg.zoneRoutes);
@@ -107,17 +101,15 @@ export class PricingService implements IPricingService {
           ? `${estimatedMiles} mi / ${estimatedMinutes} min`
           : `${estimatedMiles} mi`;
       } else {
-        // ── STEP 1C — Point-to-Point: Metered ────────────────────────────
-        const mileCost = estimatedMiles * cfg.ratePerMile;
-        const timeCost = estimatedMinutes * cfg.ratePerMinute;
-        const rawFare  = cfg.baseFee + mileCost + timeCost;
-        baseFare  = Math.max(rawFare, cfg.minimumTripFee);
-        fareMode  = 'metered';
-
-        const wasCapped = rawFare < cfg.minimumTripFee;
-        fareFormula = wasCapped
-          ? `Min. trip fee (raw $${rawFare.toFixed(2)} < floor $${cfg.minimumTripFee})`
-          : `$${cfg.baseFee} base + ${estimatedMiles} mi × $${cfg.ratePerMile} + ${estimatedMinutes} min × $${cfg.ratePerMinute}`;
+        // ── STEP 1C — Point-to-Point: Metered (base-fare / per-mile threshold) ─
+        if (estimatedMiles <= cfg.baseMiles) {
+          baseFare = cfg.baseFare;
+          fareFormula = `Base fare (≤ ${cfg.baseMiles} mi): $${cfg.baseFare}`;
+        } else {
+          baseFare = estimatedMiles * cfg.perMileRate;
+          fareFormula = `${estimatedMiles} mi × $${cfg.perMileRate}/mi`;
+        }
+        fareMode = 'metered';
         fareDurationLabel = `${estimatedMiles} mi / ${estimatedMinutes} min`;
       }
     }

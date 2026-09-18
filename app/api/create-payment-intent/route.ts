@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentPassenger } from '@/lib/auth';
 import { vehicleRepository, corporateAccountRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services/PricingService';
-import type { VehiclePricingConfig } from '@/lib/services/interfaces/IPricingService';
+import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
 import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
 
 export const dynamic = 'force-dynamic';
@@ -41,27 +41,7 @@ export async function POST(req: Request) {
     const targetSlug = vehicleSlug || 'executive-sedan';
     const vehicle = await vehicleRepository.findBySlug(targetSlug);
 
-    const vehicleConfig: VehiclePricingConfig = {
-      rateHourly: vehicle?.rateHourly ?? 85,
-      minHours: vehicle?.minHours ?? 2,
-      ratePerMile: vehicle?.ratePerMile ?? 3.5,
-      ratePerMinute: vehicle?.ratePerMinute ?? 0.65,
-      baseFee: vehicle?.baseFee ?? 15,
-      minimumTripFee: vehicle?.minimumTripFee ?? 65,
-      zoneRoutes: (vehicle?.zoneRoutes || []).map((zr) => ({
-        id: zr.id,
-        name: zr.name,
-        pickupKeywords: zr.pickupKeywords
-          .split(',')
-          .map((k: string) => k.trim().toLowerCase())
-          .filter(Boolean),
-        dropoffKeywords: zr.dropoffKeywords
-          .split(',')
-          .map((k: string) => k.trim().toLowerCase())
-          .filter(Boolean),
-        flatRate: zr.flatRate,
-      })),
-    };
+    const vehicleConfig = toVehiclePricingConfig(vehicle);
 
     let corporateDiscountPct = 0;
     let corporateAccountId: string | null = null;

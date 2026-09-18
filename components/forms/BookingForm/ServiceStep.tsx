@@ -248,7 +248,8 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
           )}
         </div>
 
-        {/* Drop-off Location Field */}
+        {/* Drop-off Location Field — hidden for Hourly bookings (no fixed destination) */}
+        {!selectedService.includes('Hourly') && (
         <div className="form-group" style={{ position: 'relative' }} ref={dropoffContainerRef}>
           <label className="form-label">
             Drop-off Location <span className="req">*</span>
@@ -334,6 +335,7 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Interactive Google Map Route Preview */}
@@ -508,8 +510,13 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
       <button
         type="button"
         onClick={() => {
-          if (!pickup || !dropoff || !pickupDate || !pickupTime) {
-            alert('Please provide Pickup location, Drop-off destination, Transfer Date, and Pickup Time.');
+          const isHourly = selectedService.includes('Hourly');
+          if (!pickup || !pickupDate || !pickupTime || (!isHourly && !dropoff)) {
+            alert(
+              isHourly
+                ? 'Please provide Pickup location, Transfer Date, and Pickup Time.'
+                : 'Please provide Pickup location, Drop-off destination, Transfer Date, and Pickup Time.'
+            );
             return;
           }
           if (!fullName || !fullName.trim()) {

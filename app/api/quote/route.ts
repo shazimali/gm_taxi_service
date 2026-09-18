@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { vehicleRepository, corporateAccountRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services/PricingService';
-import type { VehiclePricingConfig } from '@/lib/services/interfaces/IPricingService';
+import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,27 +36,7 @@ async function handleQuote(params: {
   // 1. Fetch vehicle pricing config (including active zone routes)
   const vehicle = await vehicleRepository.findBySlug(vehicleSlug);
 
-  const vehicleConfig: VehiclePricingConfig = {
-    rateHourly: vehicle?.rateHourly ?? 85,
-    minHours: vehicle?.minHours ?? 2,
-    ratePerMile: vehicle?.ratePerMile ?? 3.5,
-    ratePerMinute: vehicle?.ratePerMinute ?? 0.65,
-    baseFee: vehicle?.baseFee ?? 15,
-    minimumTripFee: vehicle?.minimumTripFee ?? 65,
-    zoneRoutes: (vehicle?.zoneRoutes || []).map((zr) => ({
-      id: zr.id,
-      name: zr.name,
-      pickupKeywords: zr.pickupKeywords
-        .split(',')
-        .map((k: string) => k.trim().toLowerCase())
-        .filter(Boolean),
-      dropoffKeywords: zr.dropoffKeywords
-        .split(',')
-        .map((k: string) => k.trim().toLowerCase())
-        .filter(Boolean),
-      flatRate: zr.flatRate,
-    })),
-  };
+  const vehicleConfig = toVehiclePricingConfig(vehicle);
 
   // 2. Lookup corporate account discount if code provided
   let corporateDiscountPct = 0;
@@ -101,7 +81,6 @@ async function handleQuote(params: {
           id: vehicle.id,
           name: vehicle.name,
           slug: vehicle.slug,
-          minHours: vehicle.minHours,
         }
       : null,
   };

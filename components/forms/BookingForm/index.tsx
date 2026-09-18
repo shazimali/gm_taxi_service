@@ -152,6 +152,7 @@ export default function BookingForm() {
           dropoff={location.dropoff}
           estimatedMiles={pricing.estimatedMiles}
           estimatedMinutes={pricing.estimatedMinutes}
+          hourlyCount={pricing.hourlyCount}
           onReset={handleReset}
         />
       ) : (
@@ -233,6 +234,7 @@ export default function BookingForm() {
               chosenVehicleObj={pricing.chosenVehicleObj}
               estimatedMiles={pricing.estimatedMiles}
               estimatedMinutes={pricing.estimatedMinutes}
+              hourlyCount={pricing.hourlyCount}
               currentVehiclePrice={pricing.currentVehiclePrice}
               fullName={fullName}
               email={email}

@@ -68,11 +68,9 @@ model Vehicle {
   passengerCapacity Int      @default(4)
   luggageCapacity   Int      @default(3)
   rateHourly        Float?
-  minHours          Int      @default(2) // minimum billable hours for hourly trips
-  ratePerMile       Float? // $/mile for metered P2P trips
-  ratePerMinute     Float? // $/min for metered P2P trips
-  baseFee           Float? // fixed base fee for metered P2P trips
-  minimumTripFee    Float    @default(65) // minimum fare floor for any trip
+  baseFare          Float? // flat fare for trips at or under baseMiles
+  baseMiles         Float? // distance threshold covered by baseFare
+  perMileRate       Float? // $/mile applied to total distance when over baseMiles
   description       String?  @db.Text
   image             String?
   features          String?  @db.Text // JSON string array

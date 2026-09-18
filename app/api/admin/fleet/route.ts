@@ -33,11 +33,9 @@ export async function POST(request: Request) {
       passengerCapacity,
       luggageCapacity,
       rateHourly,
-      minHours,
-      ratePerMile,
-      ratePerMinute,
-      baseFee,
-      minimumTripFee,
+      baseFare,
+      baseMiles,
+      perMileRate,
       features,
       description,
       displayOrder,
@@ -57,11 +55,9 @@ export async function POST(request: Request) {
         passengerCapacity: Number(passengerCapacity) || 4,
         luggageCapacity: Number(luggageCapacity) || 3,
         rateHourly: rateHourly ? Number(rateHourly) : null,
-        minHours: minHours !== undefined ? Number(minHours) : 2,
-        ratePerMile: ratePerMile ? Number(ratePerMile) : null,
-        ratePerMinute: ratePerMinute ? Number(ratePerMinute) : null,
-        baseFee: baseFee ? Number(baseFee) : null,
-        minimumTripFee: minimumTripFee !== undefined ? Number(minimumTripFee) : 65,
+        baseFare: baseFare ? Number(baseFare) : null,
+        baseMiles: baseMiles ? Number(baseMiles) : null,
+        perMileRate: perMileRate ? Number(perMileRate) : null,
         features: JSON.stringify(Array.isArray(features) ? features : []),
         description: description || '',
         displayOrder: Number(displayOrder) || 0,
@@ -93,11 +89,9 @@ export async function PUT(request: Request) {
     if (data.passengerCapacity) data.passengerCapacity = Number(data.passengerCapacity);
     if (data.luggageCapacity) data.luggageCapacity = Number(data.luggageCapacity);
     if (data.rateHourly !== undefined) data.rateHourly = data.rateHourly ? Number(data.rateHourly) : null;
-    if (data.minHours !== undefined) data.minHours = Number(data.minHours) || 2;
-    if (data.ratePerMile !== undefined) data.ratePerMile = data.ratePerMile ? Number(data.ratePerMile) : null;
-    if (data.ratePerMinute !== undefined) data.ratePerMinute = data.ratePerMinute ? Number(data.ratePerMinute) : null;
-    if (data.baseFee !== undefined) data.baseFee = data.baseFee ? Number(data.baseFee) : null;
-    if (data.minimumTripFee !== undefined) data.minimumTripFee = Number(data.minimumTripFee) || 65;
+    if (data.baseFare !== undefined) data.baseFare = data.baseFare ? Number(data.baseFare) : null;
+    if (data.baseMiles !== undefined) data.baseMiles = data.baseMiles ? Number(data.baseMiles) : null;
+    if (data.perMileRate !== undefined) data.perMileRate = data.perMileRate ? Number(data.perMileRate) : null;
     if (data.features && Array.isArray(data.features)) {
       data.features = JSON.stringify(data.features);
     }

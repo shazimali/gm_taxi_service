@@ -11,6 +11,17 @@
 let scriptLoadingPromise: Promise<boolean> | null = null;
 
 /**
+ * Bounding box covering the New England states (CT, ME, MA, NH, RI, VT).
+ * Used to restrict Places Autocomplete results to this service area.
+ */
+const NEW_ENGLAND_BOUNDS = {
+  south: 40.95,
+  west: -73.75,
+  north: 47.5,
+  east: -66.85,
+};
+
+/**
  * Returns the public Google Maps API Key configured in the environment.
  */
 export function getGoogleMapsApiKey(): string {
@@ -95,6 +106,12 @@ export async function getGooglePlacePredictions(input: string): Promise<string[]
               fetchAutocompleteSuggestions: (opts: {
                 input: string;
                 sessionToken?: unknown;
+                locationRestriction?: {
+                  west: number;
+                  north: number;
+                  east: number;
+                  south: number;
+                };
               }) => Promise<{
                 suggestions: Array<{
                   placePrediction?: {
@@ -122,6 +139,7 @@ export async function getGooglePlacePredictions(input: string): Promise<string[]
       const { suggestions } = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
         input,
         sessionToken,
+        locationRestriction: NEW_ENGLAND_BOUNDS,
       });
 
       if (suggestions && suggestions.length > 0) {

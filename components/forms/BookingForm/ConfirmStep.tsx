@@ -25,6 +25,7 @@ interface ConfirmStepProps {
   chosenVehicleObj: (typeof FLEET_DATA)[0];
   estimatedMiles: number;
   estimatedMinutes: number;
+  hourlyCount: number;
   currentVehiclePrice: PriceCalculationResult;
   fullName: string;
   email: string;
@@ -57,6 +58,7 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
   chosenVehicleObj,
   estimatedMiles,
   estimatedMinutes,
+  hourlyCount,
   currentVehiclePrice,
   fullName,
   email,
@@ -169,10 +171,12 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
               display: 'block',
             }}
           >
-            Route Matrix
+            {selectedService.includes('Hourly') ? 'Duration' : 'Route Matrix'}
           </span>
           <strong style={{ color: '#ffffff', fontSize: '0.95rem' }}>
-            {estimatedMiles} miles ({estimatedMinutes} mins)
+            {selectedService.includes('Hourly')
+              ? `${hourlyCount} hr${hourlyCount !== 1 ? 's' : ''}`
+              : `${estimatedMiles} miles (${estimatedMinutes} mins)`}
           </strong>
         </div>
 

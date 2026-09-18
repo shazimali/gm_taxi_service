@@ -17,6 +17,7 @@ interface SuccessViewProps {
   dropoff: string;
   estimatedMiles: number;
   estimatedMinutes: number;
+  hourlyCount: number;
   onReset: () => void;
 }
 
@@ -31,6 +32,7 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
   dropoff,
   estimatedMiles,
   estimatedMinutes,
+  hourlyCount,
   onReset,
 }) => {
   return (
@@ -145,13 +147,19 @@ export const SuccessView: React.FC<SuccessViewProps> = ({
           <div>
             <strong style={{ color: '#ffffff' }}>Pickup (Start Point):</strong> {pickup}
           </div>
+          {!selectedService.includes('Hourly') && (
+            <div>
+              <strong style={{ color: '#ffffff' }}>Destination (End Point):</strong>{' '}
+              {dropoff || 'City Centre'}
+            </div>
+          )}
           <div>
-            <strong style={{ color: '#ffffff' }}>Destination (End Point):</strong>{' '}
-            {dropoff || 'City Centre'}
-          </div>
-          <div>
-            <strong style={{ color: '#ffffff' }}>Distance &amp; Time:</strong> {estimatedMiles}{' '}
-            miles ({estimatedMinutes} mins)
+            <strong style={{ color: '#ffffff' }}>
+              {selectedService.includes('Hourly') ? 'Duration:' : 'Distance & Time:'}
+            </strong>{' '}
+            {selectedService.includes('Hourly')
+              ? `${hourlyCount} hr${hourlyCount !== 1 ? 's' : ''}`
+              : `${estimatedMiles} miles (${estimatedMinutes} mins)`}
           </div>
           <div>
             <strong style={{ color: '#ffffff' }}>Payment Status:</strong> 🔒 Hold Placed (Manual

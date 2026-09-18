@@ -7,10 +7,8 @@ import {
   vehicleRepository,
   corporateAccountRepository,
 } from '@/lib/repositories';
-import {
-  pricingService,
-  type VehiclePricingConfig,
-} from '@/lib/services';
+import { pricingService } from '@/lib/services';
+import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
 import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
 
 export const dynamic = 'force-dynamic';
@@ -68,27 +66,7 @@ export async function POST(req: Request) {
     const targetSlug = vehicleSlug || 'executive-sedan';
     const vehicle = await vehicleRepository.findBySlug(targetSlug);
 
-    const vehicleConfig: VehiclePricingConfig = {
-      rateHourly: vehicle?.rateHourly ?? 85,
-      minHours: vehicle?.minHours ?? 2,
-      ratePerMile: vehicle?.ratePerMile ?? 3.5,
-      ratePerMinute: vehicle?.ratePerMinute ?? 0.65,
-      baseFee: vehicle?.baseFee ?? 15,
-      minimumTripFee: vehicle?.minimumTripFee ?? 65,
-      zoneRoutes: (vehicle?.zoneRoutes || []).map((zr) => ({
-        id: zr.id,
-        name: zr.name,
-        pickupKeywords: zr.pickupKeywords
-          .split(',')
-          .map((k: string) => k.trim().toLowerCase())
-          .filter(Boolean),
-        dropoffKeywords: zr.dropoffKeywords
-          .split(',')
-          .map((k: string) => k.trim().toLowerCase())
-          .filter(Boolean),
-        flatRate: zr.flatRate,
-      })),
-    };
+    const vehicleConfig = toVehiclePricingConfig(vehicle);
 
     // 3. Corporate account verification if code provided
     let corporateDiscountPct = 0;

@@ -3,7 +3,7 @@
  *
  * S — Single Responsibility: type contracts for the 4-step pricing engine.
  *
- * Step 1 — Determine the Fare (Hourly | Zone Flat | Metered + floor)
+ * Step 1 — Determine the Fare (Hourly | Zone Flat | Metered: base-fare/base-miles/per-mile threshold)
  * Step 2 — Apply Corporate Discount (% off Step 1 fare only)
  * Step 3 — Optional Tip (UI only — not computed here)
  * Step 4 — Output (Fare + Tip = Total)
@@ -21,11 +21,9 @@ export interface ZoneRouteConfig {
 // ── Per-vehicle pricing configuration (loaded from DB) ────────────────────────
 export interface VehiclePricingConfig {
   rateHourly: number;
-  minHours: number;
-  ratePerMile: number;
-  ratePerMinute: number;
-  baseFee: number;
-  minimumTripFee: number;
+  baseFare: number | null;    // flat fare for trips at or under baseMiles
+  baseMiles: number | null;   // distance threshold covered by baseFare
+  perMileRate: number | null; // $/mile applied to total distance when over baseMiles
   zoneRoutes: ZoneRouteConfig[];
 }
 
