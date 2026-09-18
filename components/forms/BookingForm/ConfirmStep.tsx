@@ -558,23 +558,8 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={loading}
-          style={{
-            flex: 1,
-            height: '54px',
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            color: '#ffffff',
-            borderRadius: '10px',
-            fontWeight: 700,
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: '0.875rem',
-          }}
-        >
+      <div className="booking-nav-buttons">
+        <button type="button" onClick={onBack} disabled={loading} className="booking-nav-back">
           ← Back
         </button>
 
@@ -584,9 +569,6 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
           disabled={loading}
           className="btn btn--gold"
           style={{
-            flex: 2.5,
-            height: '54px',
-            fontSize: '0.975rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

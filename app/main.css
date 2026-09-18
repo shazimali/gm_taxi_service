@@ -3477,6 +3477,128 @@ p {
   }
 }
 
+/* ── Booking Form: Step Indicator ─────────────── */
+.booking-step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.booking-step-indicator__step {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.booking-step-indicator__circle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.booking-step-indicator__bar {
+  flex: 1;
+  height: 2px;
+  min-width: 12px;
+  background-color: #1e293b;
+  margin: 0 1rem;
+}
+
+.booking-step-indicator__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c5a46d 0%, #d4af37 100%);
+  transition: width 0.3s ease;
+}
+
+@media (max-width: 560px) {
+  .booking-step-indicator {
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+  }
+
+  .booking-step-indicator__step span {
+    display: none;
+  }
+
+  .booking-step-indicator__circle {
+    width: 26px;
+    height: 26px;
+    font-size: 0.75rem;
+  }
+
+  .booking-step-indicator__bar {
+    margin: 0 0.5rem;
+  }
+}
+
+/* ── Booking Form: Step Navigation Buttons ────── */
+.booking-nav-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.booking-nav-buttons .btn {
+  flex: 2.5;
+}
+
+.booking-nav-back {
+  flex: 1;
+  height: 52px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.booking-nav-back:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn--full {
+  width: 100%;
+  height: 52px;
+  font-size: 0.925rem;
+  justify-content: center;
+}
+
+@media (max-width: 560px) {
+  .booking-nav-buttons {
+    flex-direction: column-reverse;
+  }
+
+  .booking-nav-buttons .booking-nav-back,
+  .booking-nav-buttons .btn {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .booking-nav-buttons .btn,
+  .btn--full {
+    white-space: normal;
+    text-align: center;
+    height: auto;
+    min-height: 52px;
+    font-size: 0.85rem;
+  }
+}
+
 /* ── Info Column ─────────────────────────────── */
 .contact-info-col {
   display: flex;

@@ -223,31 +223,12 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
       </div>
 
       {/* Navigation Buttons */}
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            flex: 1,
-            height: '52px',
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            color: '#ffffff',
-            borderRadius: '10px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-          }}
-        >
+      <div className="booking-nav-buttons">
+        <button type="button" onClick={onBack} className="booking-nav-back">
           Back
         </button>
 
-        <button
-          type="button"
-          onClick={onNext}
-          className="btn btn--gold"
-          style={{ flex: 2, height: '52px', fontSize: '0.95rem' }}
-        >
+        <button type="button" onClick={onNext} className="btn btn--gold">
           <span>
             Proceed with {chosenVehicle?.name} — ${currentVehiclePrice.baseFare.toFixed(2)}
           </span>

@@ -710,7 +710,7 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
           onNext();
         }}
         className="btn btn--gold btn--full"
-        style={{ height: '52px', marginTop: '0.5rem', fontSize: '0.925rem' }}
+        style={{ marginTop: '0.5rem' }}
       >
         <span>Calculate Rate &amp; Select Vehicle</span>
         <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
