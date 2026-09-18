@@ -3358,6 +3358,11 @@ p {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
 }
 
+.contact-form-card--full {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .contact-form-card__header {
   margin-bottom: 2rem;
 }

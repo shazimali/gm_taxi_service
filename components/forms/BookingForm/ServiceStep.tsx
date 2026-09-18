@@ -200,7 +200,7 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
           </div>
 
           {/* Pickup Live Search Dropdown */}
-          {showPickupDropdown && (
+          {showPickupDropdown && pickupSuggestions.length > 0 && (
             <div
               style={{
                 position: 'absolute',
@@ -288,7 +288,7 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
           </div>
 
           {/* Dropoff Live Search Dropdown */}
-          {showDropoffDropdown && (
+          {showDropoffDropdown && dropoffSuggestions.length > 0 && (
             <div
               style={{
                 position: 'absolute',
