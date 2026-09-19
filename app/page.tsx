@@ -2,7 +2,6 @@ import BookingSteps from '@/components/home/BookingSteps';
 import FAQAccordion from '@/components/home/FAQAccordion';
 import FleetSection from '@/components/home/FleetSection';
 import HeroSection from '@/components/home/HeroSection';
-import MediaShowcase from '@/components/home/MediaShowcase';
 import ServicesGrid from '@/components/home/ServicesGrid';
 import StatsBar from '@/components/home/StatsBar';
 import Testimonials from '@/components/home/Testimonials';
@@ -21,9 +20,6 @@ export default function HomePage() {
       <hr className="section-divider" aria-hidden="true" />
 
       <FleetSection />
-      <hr className="section-divider" aria-hidden="true" />
-
-      <MediaShowcase />
       <hr className="section-divider" aria-hidden="true" />
 
       <WhyChooseUs />
