@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { FLEET_DATA } from '@/data/fleetData';
+import { FLEET_DATA, type Vehicle } from '@/data/fleetData';
 import {
   calculateGoogleDistanceMatrix,
   calculateGoogleRouteWithStops,
@@ -11,6 +11,28 @@ import {
 import type { PriceCalculationResult } from '@/lib/services';
 
 export function useRoutePricing(pickup: string, dropoff: string, stops: string[] = []) {
+  // Fleet list (vehicle names, images, capacities) is loaded from the database
+  // so admin-managed uploads show up in the booking form. Static FLEET_DATA is
+  // only the initial render / offline fallback.
+  const [fleet, setFleet] = useState<Vehicle[]>(FLEET_DATA);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    fetch('/api/fleet')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isCancelled && Array.isArray(data.fleet) && data.fleet.length > 0) {
+          setFleet(data.fleet);
+        }
+      })
+      .catch((err) => console.warn('Fleet fetch error:', err));
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
   const [selectedService, setSelectedService] = useState('Airport Transportation');
   const [selectedVehicle, setSelectedVehicle] = useState(FLEET_DATA[0].slug);
   const [hourlyCount, setHourlyCount] = useState(3);
@@ -108,8 +130,8 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
   // Refresh server quotes for the whole fleet whenever route or service changes,
   // so pricing is already cached before the customer reaches vehicle selection.
   useEffect(() => {
-    FLEET_DATA.forEach((vehicle) => fetchQuote(vehicle.slug));
-  }, [fetchQuote]);
+    fleet.forEach((vehicle) => fetchQuote(vehicle.slug));
+  }, [fleet, fetchQuote]);
 
   // Step 2: When the customer picks a vehicle, re-fetch its quote fresh from the
   // database (base fare / base miles / per-mile rate may have changed since the
@@ -129,7 +151,7 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
 
   // Client-side fallback calculation if server response is pending
   const calculateVehiclePrice = useCallback(
-    (vehicle: (typeof FLEET_DATA)[0]): PriceCalculationResult => {
+    (vehicle: Vehicle): PriceCalculationResult => {
       if (serverQuotes[vehicle.slug]) {
         return serverQuotes[vehicle.slug];
       }
@@ -153,7 +175,7 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
   );
 
   const chosenVehicleObj =
-    FLEET_DATA.find((v) => v.slug === selectedVehicle) || FLEET_DATA[0];
+    fleet.find((v) => v.slug === selectedVehicle) || fleet[0];
 
   const currentVehiclePrice = calculateVehiclePrice(chosenVehicleObj);
 
@@ -167,6 +189,7 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
   const totalWithTip = Math.round((currentVehiclePrice.totalBeforeTip + tipAmount) * 100) / 100;
 
   return {
+    fleet,
     selectedService,
     setSelectedService,
     selectedVehicle,

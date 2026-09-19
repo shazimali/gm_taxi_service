@@ -237,6 +237,7 @@ export default function BookingForm() {
           {/* Step 2: Vehicle Selection */}
           {step === 2 && (
             <VehicleStep
+              fleet={pricing.fleet}
               selectedVehicle={pricing.selectedVehicle}
               setSelectedVehicle={pricing.selectVehicle}
               quoteLoading={pricing.quoteLoading}

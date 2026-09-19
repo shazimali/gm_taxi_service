@@ -1,11 +1,12 @@
 'use client';
 
-import { FLEET_DATA } from '@/data/fleetData';
+import type { Vehicle } from '@/data/fleetData';
 import type { PriceCalculationResult } from '@/lib/services';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import React from 'react';
 
 interface VehicleStepProps {
+  fleet: Vehicle[];
   selectedVehicle: string;
   setSelectedVehicle: (slug: string) => void | Promise<void>;
   quoteLoading?: boolean;
@@ -13,13 +14,14 @@ interface VehicleStepProps {
   dropoff: string;
   estimatedMiles: number;
   estimatedMinutes: number;
-  calculateVehiclePrice?: (vehicle: (typeof FLEET_DATA)[0]) => PriceCalculationResult;
+  calculateVehiclePrice?: (vehicle: Vehicle) => PriceCalculationResult;
   currentVehiclePrice: PriceCalculationResult;
   onBack: () => void;
   onNext: () => void;
 }
 
 export const VehicleStep: React.FC<VehicleStepProps> = ({
+  fleet,
   selectedVehicle,
   setSelectedVehicle,
   quoteLoading = false,
@@ -32,7 +34,7 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
   onNext,
 }) => {
   const chosenVehicle =
-    FLEET_DATA.find((v) => v.slug === selectedVehicle) || FLEET_DATA[0];
+    fleet.find((v) => v.slug === selectedVehicle) || fleet[0];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -70,7 +72,7 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
       </div>
 
       <div className="booking-vehicles-grid">
-        {FLEET_DATA.map((vehicle) => {
+        {fleet.map((vehicle) => {
           const isSelected = selectedVehicle === vehicle.slug;
 
           return (
