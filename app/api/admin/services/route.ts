@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedAdmin } from '@/lib/auth';
+import { deleteUploadedFile } from '@/lib/utils/uploads';
 
 export const dynamic = 'force-dynamic';
 
@@ -199,7 +200,7 @@ export async function PUT(request: Request) {
     if (tagline !== undefined || badge !== undefined) updateData.tagline = tagline || badge || '';
     if (image !== undefined) updateData.image = image;
     if (description !== undefined || shortDesc !== undefined) updateData.description = description || shortDesc || '';
-    
+
     if (modules !== undefined) {
       updateData.fullDetails = JSON.stringify(modules);
     } else if (fullDetails !== undefined || fullDesc !== undefined) {
@@ -210,10 +211,16 @@ export async function PUT(request: Request) {
     updateData.benefits = JSON.stringify(bList);
     updateData.features = JSON.stringify(fList);
 
+    const existing = await prisma.service.findUnique({ where: { id }, select: { image: true } });
+
     const service = await prisma.service.update({
       where: { id },
       data: updateData,
     });
+
+    if (existing && image !== undefined && image !== existing.image) {
+      await deleteUploadedFile(existing.image);
+    }
 
     return NextResponse.json({ success: true, service });
   } catch (error: any) {
@@ -237,9 +244,11 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Service ID is required' }, { status: 400 });
     }
 
-    await prisma.service.delete({
+    const service = await prisma.service.delete({
       where: { id },
     });
+
+    await deleteUploadedFile(service.image);
 
     return NextResponse.json({ success: true, message: 'Service deleted successfully' });
   } catch (error: any) {

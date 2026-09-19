@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedAdmin } from '@/lib/auth';
+import { deleteUploadedFile } from '@/lib/utils/uploads';
 
 // GET all vehicles
 export async function GET() {
@@ -96,10 +97,16 @@ export async function PUT(request: Request) {
       data.features = JSON.stringify(data.features);
     }
 
+    const existing = await prisma.vehicle.findUnique({ where: { id }, select: { image: true } });
+
     const vehicle = await prisma.vehicle.update({
       where: { id },
       data,
     });
+
+    if (existing && data.image !== undefined && data.image !== existing.image) {
+      await deleteUploadedFile(existing.image);
+    }
 
     return NextResponse.json({ success: true, vehicle });
   } catch (error) {
@@ -123,9 +130,11 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Vehicle ID is required' }, { status: 400 });
     }
 
-    await prisma.vehicle.delete({
+    const vehicle = await prisma.vehicle.delete({
       where: { id },
     });
+
+    await deleteUploadedFile(vehicle.image);
 
     return NextResponse.json({ success: true });
   } catch (error) {

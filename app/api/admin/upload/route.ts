@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getAuthenticatedAdmin } from '@/lib/auth';
+import { deleteUploadedFile } from '@/lib/utils/uploads';
 
 // ── Security: explicit allowlist of upload destinations ──────────────────────
 const ALLOWED_FOLDERS = new Set([
@@ -68,5 +69,26 @@ export async function POST(req: Request) {
   } catch (err: unknown) {
     console.error('File upload error:', err);
     return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  const admin = await getAuthenticatedAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { url } = await req.json();
+    if (!url || typeof url !== 'string') {
+      return NextResponse.json({ error: 'File URL is required' }, { status: 400 });
+    }
+
+    await deleteUploadedFile(url);
+
+    return NextResponse.json({ success: true });
+  } catch (err: unknown) {
+    console.error('File delete error:', err);
+    return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });
   }
 }

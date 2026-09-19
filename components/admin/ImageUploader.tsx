@@ -20,6 +20,10 @@ export default function ImageUploader({
   const [error, setError] = useState('');
   const [localPreview, setLocalPreview] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // The persisted value the form loaded with — never delete this immediately on remove,
+  // since the parent form may still be cancelled. The record's own save/delete route
+  // cleans it up once the removal is actually persisted.
+  const initialValueRef = useRef(value);
 
   // Clear local blob preview when prop value updates to official server URL
   useEffect(() => {
@@ -75,10 +79,25 @@ export default function ImageUploader({
   };
 
   const handleRemove = () => {
+    const imageToDelete = value;
     setLocalPreview('');
     onChange('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+
+    // Only delete files uploaded fresh in this session — not the persisted value the form
+    // loaded with, since the edit could still be cancelled without saving.
+    if (
+      imageToDelete &&
+      imageToDelete.startsWith('/uploads/') &&
+      imageToDelete !== initialValueRef.current
+    ) {
+      fetch('/api/admin/upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: imageToDelete }),
+      }).catch((err) => console.error('Failed to delete image from server:', err));
     }
   };
 
