@@ -3,3 +3,8 @@ node_modules
 .env
 .env.local
 .env*.local
+
+# Runtime-uploaded media — persisted on the VPS via a bind mount
+# (docker-compose.yml), never via git. Tracking these in git creates
+# a split-brain: old committed uploads survive deploys, new ones don't.
+public/uploads/
