@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { parseStops } from '@/lib/utils/stops';
 
 interface Booking {
@@ -28,14 +29,26 @@ interface Booking {
 
 const STATUSES = ['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const;
 
+type RowAction = 'status' | 'capture' | 'release' | 'delete';
+
 export default function BookingsAdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [rowActions, setRowActions] = useState<Record<string, RowAction>>({});
+
+  const setRowAction = (id: string, action: RowAction | null) => {
+    setRowActions((prev) => {
+      const next = { ...prev };
+      if (action) next[id] = action;
+      else delete next[id];
+      return next;
+    });
+  };
 
   const fetchBookings = async () => {
     try {
-      const res = await fetch('/api/admin/bookings');
+      const res = await fetch('/api/admin/bookings', { cache: 'no-store' });
       const data = await res.json();
       if (res.ok) setBookings(data.bookings || []);
     } catch (e) {
@@ -47,7 +60,21 @@ export default function BookingsAdminPage() {
 
   useEffect(() => { fetchBookings(); }, []);
 
+  const applyUpdatedBooking = (updated: Booking) => {
+    setBookings((prev) => prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)));
+  };
+
+  const readErrorMessage = async (res: Response, fallback: string) => {
+    try {
+      const data = await res.json();
+      return data?.error || fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
   const handleStatusChange = async (id: string, newStatus: string) => {
+    setRowAction(id, 'status');
     try {
       const res = await fetch('/api/admin/bookings', {
         method: 'PUT',
@@ -55,17 +82,38 @@ export default function BookingsAdminPage() {
         body: JSON.stringify({ id, status: newStatus }),
       });
       if (res.ok) {
-        fetchBookings();
+        const data = await res.json();
+        applyUpdatedBooking(data.booking);
       } else {
-        alert('Failed to update booking status');
+        Swal.fire({
+          icon: 'error',
+          title: 'Update Failed',
+          text: await readErrorMessage(res, 'Failed to update booking status'),
+          confirmButtonColor: '#c5a46d',
+        });
       }
     } catch {
-      alert('Error updating status');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error updating status', confirmButtonColor: '#c5a46d' });
+    } finally {
+      setRowAction(id, null);
     }
   };
 
   const handleCapturePayment = async (bookingId: string) => {
-    if (!confirm('Passenger has reached destination? Confirm capturing held funds now.')) return;
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Capture Payment?',
+      text: 'Passenger has reached destination? Confirm capturing held funds now.',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, capture funds',
+      cancelButtonText: 'Go back',
+      confirmButtonColor: '#166534',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    setRowAction(bookingId, 'capture');
     try {
       const res = await fetch('/api/admin/bookings/capture', {
         method: 'POST',
@@ -73,18 +121,44 @@ export default function BookingsAdminPage() {
         body: JSON.stringify({ bookingId }),
       });
       if (res.ok) {
-        alert('Payment captured successfully!');
-        fetchBookings();
+        const data = await res.json();
+        applyUpdatedBooking(data.booking);
+        Swal.fire({
+          icon: 'success',
+          title: 'Payment Captured',
+          text: 'Payment captured successfully!',
+          confirmButtonColor: '#166534',
+        });
       } else {
-        alert('Failed to capture payment');
+        Swal.fire({
+          icon: 'error',
+          title: 'Capture Failed',
+          text: await readErrorMessage(res, 'Failed to capture payment'),
+          confirmButtonColor: '#c5a46d',
+        });
       }
     } catch {
-      alert('Error capturing payment');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error capturing payment', confirmButtonColor: '#c5a46d' });
+    } finally {
+      setRowAction(bookingId, null);
     }
   };
 
   const handleReleaseHold = async (bookingId: string) => {
-    if (!confirm('Are you sure you want to release the card hold and cancel this payment?')) return;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Release Hold?',
+      text: 'Are you sure you want to release the card hold and cancel this payment?',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, release hold',
+      cancelButtonText: 'Go back',
+      confirmButtonColor: '#991b1b',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    setRowAction(bookingId, 'release');
     try {
       const res = await fetch('/api/admin/bookings/cancel-hold', {
         method: 'POST',
@@ -92,23 +166,60 @@ export default function BookingsAdminPage() {
         body: JSON.stringify({ bookingId }),
       });
       if (res.ok) {
-        alert('Card hold released successfully!');
-        fetchBookings();
+        const data = await res.json();
+        applyUpdatedBooking(data.booking);
+        Swal.fire({
+          icon: 'success',
+          title: 'Hold Released',
+          text: 'Card hold released successfully!',
+          confirmButtonColor: '#166534',
+        });
       } else {
-        alert('Failed to release hold');
+        Swal.fire({
+          icon: 'error',
+          title: 'Release Failed',
+          text: await readErrorMessage(res, 'Failed to release hold'),
+          confirmButtonColor: '#c5a46d',
+        });
       }
     } catch {
-      alert('Error releasing hold');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error releasing hold', confirmButtonColor: '#c5a46d' });
+    } finally {
+      setRowAction(bookingId, null);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this booking record?')) return;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Delete Booking?',
+      text: 'Are you sure you want to delete this booking record? This cannot be undone.',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Go back',
+      confirmButtonColor: '#e11d48',
+      cancelButtonColor: '#64748b',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+
+    setRowAction(id, 'delete');
     try {
       const res = await fetch(`/api/admin/bookings?id=${id}`, { method: 'DELETE' });
-      if (res.ok) fetchBookings();
+      if (res.ok) {
+        setBookings((prev) => prev.filter((b) => b.id !== id));
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Delete Failed',
+          text: await readErrorMessage(res, 'Failed to delete booking'),
+          confirmButtonColor: '#c5a46d',
+        });
+      }
     } catch {
-      alert('Error deleting booking');
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Error deleting booking', confirmButtonColor: '#c5a46d' });
+    } finally {
+      setRowAction(id, null);
     }
   };
 
@@ -151,6 +262,8 @@ export default function BookingsAdminPage() {
             const isHold = b.paymentStatus === 'HOLD_PLACED';
             const isCaptured = b.paymentStatus === 'CAPTURED';
             const isCancelled = b.paymentStatus === 'CANCELLED_RELEASED' || b.status === 'CANCELLED';
+            const activeAction = rowActions[b.id];
+            const isBusy = Boolean(activeAction);
 
             return (
               <div key={b.id} className="admin-booking-card">
@@ -169,57 +282,62 @@ export default function BookingsAdminPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.65rem' }}>
+                  <div className="admin-booking-card__side">
                     <div className="admin-booking-card__actions">
                       <select
                         value={b.status}
                         data-status={b.status}
                         onChange={(e) => handleStatusChange(b.id, e.target.value)}
                         className="admin-status-select"
+                        disabled={isBusy}
                       >
                         <option value="PENDING">PENDING</option>
                         <option value="CONFIRMED">CONFIRMED</option>
                         <option value="COMPLETED">COMPLETED</option>
                         <option value="CANCELLED">CANCELLED</option>
                       </select>
+                      {activeAction === 'status' && <span className="admin-spinner admin-spinner--dark" />}
 
                       <button
                         onClick={() => handleDelete(b.id)}
                         className="admin-btn--danger"
+                        disabled={isBusy}
                       >
-                        Delete
+                        {activeAction === 'delete' ? <><span className="admin-spinner admin-spinner--dark" /> Deleting…</> : 'Delete'}
                       </button>
                     </div>
 
                     {/* Stripe Hold & Capture Actions */}
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className="admin-booking-card__payment-actions">
                       {isHold && (
                         <>
                           <button
                             type="button"
                             onClick={() => handleCapturePayment(b.id)}
-                            style={{ padding: '0.4rem 0.85rem', backgroundColor: '#166534', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                            className="admin-btn--capture"
+                            disabled={isBusy}
                           >
-                            💳 Capture Payment
+                            {activeAction === 'capture' ? <><span className="admin-spinner" /> Capturing…</> : <>💳 Capture Payment</>}
                           </button>
                           <button
                             type="button"
                             onClick={() => handleReleaseHold(b.id)}
-                            style={{ padding: '0.4rem 0.85rem', backgroundColor: '#991b1b', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                            className="admin-btn--release"
+                            disabled={isBusy}
                           >
-                            ❌ Release Hold
+                            {activeAction === 'release' ? <><span className="admin-spinner admin-spinner--dark" /> Releasing…</> : <>❌ Release Hold</>}
                           </button>
                         </>
                       )}
 
                       {isCaptured && (
-                        <span style={{ fontSize: '0.785rem', fontWeight: 800, color: '#166534', backgroundColor: '#f0fdf4', padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
+                        <span className="admin-payment-badge admin-payment-badge--captured">
                           ✅ Payment Captured
                         </span>
                       )}
 
                       {isCancelled && (
-                        <span style={{ fontSize: '0.785rem', fontWeight: 700, color: '#64748b', backgroundColor: '#f8fafc', padding: '0.35rem 0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                        <span className="admin-payment-badge admin-payment-badge--cancelled">
                           ❌ Hold Released
                         </span>
                       )}
@@ -230,35 +348,35 @@ export default function BookingsAdminPage() {
                 {/* Details grid */}
                 <div className="admin-booking-card__details">
                   <div>
-                    <strong className="admin-booking-card__detail-label">Service Type:</strong>
+                    <strong className="admin-booking-card__detail-label">Service Type</strong>
                     {b.serviceType}
                   </div>
                   <div>
-                    <strong className="admin-booking-card__detail-label">Pickup Date &amp; Time:</strong>
+                    <strong className="admin-booking-card__detail-label">Pickup Date &amp; Time</strong>
                     {b.pickupDate} at {b.pickupTime}
                   </div>
                   <div>
-                    <strong className="admin-booking-card__detail-label">Pickup Location:</strong>
+                    <strong className="admin-booking-card__detail-label">Pickup Location</strong>
                     {b.pickupLocation}
                   </div>
                   {parseStops(b.stops).length > 0 && (
                     <div>
-                      <strong className="admin-booking-card__detail-label">Stops:</strong>
+                      <strong className="admin-booking-card__detail-label">Stops</strong>
                       {parseStops(b.stops).map((s, i) => `${i + 1}. ${s}`).join('  ')}
                     </div>
                   )}
                   {b.dropoffLocation && (
                     <div>
-                      <strong className="admin-booking-card__detail-label">Drop-off Location:</strong>
+                      <strong className="admin-booking-card__detail-label">Drop-off Location</strong>
                       {b.dropoffLocation}
                     </div>
                   )}
                   <div>
-                    <strong className="admin-booking-card__detail-label">Passengers / Luggage:</strong>
+                    <strong className="admin-booking-card__detail-label">Passengers / Luggage</strong>
                     {b.passengers} Pax, {b.luggage} Luggage
                   </div>
                   <div>
-                    <strong className="admin-booking-card__detail-label">Payment Status:</strong>
+                    <strong className="admin-booking-card__detail-label">Payment Status</strong>
                     <span style={{ fontWeight: 800, color: isHold ? '#b8860b' : isCaptured ? '#166534' : '#64748b' }}>
                       {b.paymentStatus || 'PENDING'}
                     </span>

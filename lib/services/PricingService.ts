@@ -6,8 +6,7 @@
  * STEP 1 — Determine the Fare
  *   1A  Hourly:  fare = rate × requested hours (no minimum)
  *   1B  Metered: estimatedMiles <= baseMiles → fare = baseFare
- *                estimatedMiles >  baseMiles → fare = estimatedMiles × perMileRate
- *                (full distance, not just the overage past baseMiles)
+ *                estimatedMiles >  baseMiles → fare = baseFare + (estimatedMiles - baseMiles) × perMileRate
  *
  * STEP 2 — Tip (UI only — not computed here)
  *
@@ -62,8 +61,9 @@ export class PricingService implements IPricingService {
         baseFare = cfg.baseFare;
         fareFormula = `Base fare (≤ ${cfg.baseMiles} mi): $${cfg.baseFare}`;
       } else {
-        baseFare = estimatedMiles * cfg.perMileRate;
-        fareFormula = `${estimatedMiles} mi × $${cfg.perMileRate}/mi`;
+        const extraMiles = estimatedMiles - cfg.baseMiles;
+        baseFare = cfg.baseFare + extraMiles * cfg.perMileRate;
+        fareFormula = `Base fare $${cfg.baseFare} + ${extraMiles} mi × $${cfg.perMileRate}/mi`;
       }
       fareMode = 'metered';
       fareDurationLabel = `${estimatedMiles} mi / ${estimatedMinutes} min`;

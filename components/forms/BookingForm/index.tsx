@@ -238,7 +238,8 @@ export default function BookingForm() {
           {step === 2 && (
             <VehicleStep
               selectedVehicle={pricing.selectedVehicle}
-              setSelectedVehicle={pricing.setSelectedVehicle}
+              setSelectedVehicle={pricing.selectVehicle}
+              quoteLoading={pricing.quoteLoading}
               pickup={location.pickup}
               dropoff={location.dropoff}
               estimatedMiles={pricing.estimatedMiles}

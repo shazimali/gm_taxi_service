@@ -283,7 +283,7 @@ export default function FleetAdminPage() {
                   Pricing Engine Parameters
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                  Metered fare: trips ≤ Base Miles cost Base Fare; trips over Base Miles cost distance × Per Mile Rate
+                  Metered fare: trips ≤ Base Miles cost Base Fare; trips over Base Miles cost Base Fare + (extra miles × Per Mile Rate)
                 </div>
                 <div className="admin-form__row--3">
                   <div>

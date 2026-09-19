@@ -1355,4 +1355,308 @@ body.admin-body {
   color: #475569;
 }
 
+/* ── Filter Bar (status tabs) ────────────────── */
+.admin-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-filter-btn {
+  padding: 0.55rem 1.1rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 30px;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-filter-btn:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.admin-filter-btn--active {
+  background: linear-gradient(135deg, #c5a46d 0%, #a88548 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(197, 164, 109, 0.3);
+}
+
+.admin-filter-btn--active:hover {
+  background: linear-gradient(135deg, #d4af37 0%, #b89552 100%);
+  color: #ffffff;
+}
+
+/* ── Empty State ──────────────────────────────── */
+.admin-empty-state {
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.925rem;
+  font-weight: 500;
+}
+
+/* ── Booking Cards ────────────────────────────── */
+.admin-booking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-booking-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-booking-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.admin-booking-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.1rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-booking-card__ref-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.admin-booking-card__ref {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #b8860b;
+  background-color: rgba(197, 164, 109, 0.12);
+  padding: 0.2rem 0.65rem;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+.admin-booking-card__created {
+  font-size: 0.775rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.admin-booking-card__name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.35rem 0;
+}
+
+.admin-booking-card__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.admin-booking-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-status-select {
+  padding: 0.5rem 0.85rem;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.admin-status-select:focus {
+  border-color: #c5a46d;
+  box-shadow: 0 0 0 3px rgba(197, 164, 109, 0.18);
+}
+
+.admin-status-select[data-status="PENDING"] {
+  color: #d97706;
+  background-color: #fffbe6;
+  border-color: #fde68a;
+}
+
+.admin-status-select[data-status="CONFIRMED"] {
+  color: #059669;
+  background-color: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.admin-status-select[data-status="COMPLETED"] {
+  color: #b8860b;
+  background-color: #fefce8;
+  border-color: #fef08a;
+}
+
+.admin-status-select[data-status="CANCELLED"] {
+  color: #e11d48;
+  background-color: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.admin-booking-card__details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem 1.5rem;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.admin-booking-card__detail-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.admin-booking-card__requests {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.admin-booking-card__requests-label {
+  font-weight: 700;
+  color: #334155;
+}
+
+/* ── Payment Hold Actions ─────────────────────── */
+.admin-btn--capture {
+  padding: 0.45rem 0.9rem;
+  background-color: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-btn--capture:hover {
+  background-color: #059669;
+}
+
+.admin-btn--release {
+  padding: 0.45rem 0.9rem;
+  background-color: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-btn--release:hover {
+  background-color: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.admin-payment-badge {
+  font-size: 0.775rem;
+  font-weight: 800;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.admin-payment-badge--captured {
+  color: #166534;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.admin-payment-badge--cancelled {
+  color: #64748b;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.admin-booking-card__payment-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-booking-card__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+/* ── Inline loading spinner ───────────────────── */
+.admin-spinner {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: admin-spin 0.7s linear infinite;
+  vertical-align: -0.15em;
+}
+
+.admin-spinner--dark {
+  border: 2px solid rgba(197, 164, 109, 0.25);
+  border-top-color: #b8860b;
+}
+
+@keyframes admin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.admin-status-select:disabled,
+.admin-btn--danger:disabled,
+.admin-btn--capture:disabled,
+.admin-btn--release:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-btn--capture,
+.admin-btn--release {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 

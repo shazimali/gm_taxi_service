@@ -2,12 +2,13 @@
 
 import { FLEET_DATA } from '@/data/fleetData';
 import type { PriceCalculationResult } from '@/lib/services';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import React from 'react';
 
 interface VehicleStepProps {
   selectedVehicle: string;
-  setSelectedVehicle: (slug: string) => void;
+  setSelectedVehicle: (slug: string) => void | Promise<void>;
+  quoteLoading?: boolean;
   pickup: string;
   dropoff: string;
   estimatedMiles: number;
@@ -21,6 +22,7 @@ interface VehicleStepProps {
 export const VehicleStep: React.FC<VehicleStepProps> = ({
   selectedVehicle,
   setSelectedVehicle,
+  quoteLoading = false,
   pickup,
   dropoff,
   estimatedMiles,
@@ -216,9 +218,16 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
           <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>
             Calculated Fare:
           </span>
-          <strong style={{ fontSize: '1.25rem', color: '#c5a46d', fontWeight: 900 }}>
-            ${currentVehiclePrice.baseFare.toFixed(2)}
-          </strong>
+          {quoteLoading ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#c5a46d' }}>
+              <Loader2 size={18} className="animate-spin" />
+              <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Updating fare…</span>
+            </span>
+          ) : (
+            <strong style={{ fontSize: '1.25rem', color: '#c5a46d', fontWeight: 900 }}>
+              ${currentVehiclePrice.baseFare.toFixed(2)}
+            </strong>
+          )}
         </div>
       </div>
 
@@ -228,11 +237,26 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
           Back
         </button>
 
-        <button type="button" onClick={onNext} className="btn btn--gold">
-          <span>
-            Proceed with {chosenVehicle?.name} — ${currentVehiclePrice.baseFare.toFixed(2)}
-          </span>
-          <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
+        <button
+          type="button"
+          onClick={onNext}
+          className="btn btn--gold"
+          disabled={quoteLoading}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {quoteLoading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" style={{ marginRight: '0.5rem' }} />
+              <span>Fetching latest fare…</span>
+            </>
+          ) : (
+            <>
+              <span>
+                Proceed with {chosenVehicle?.name} — ${currentVehiclePrice.baseFare.toFixed(2)}
+              </span>
+              <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
+            </>
+          )}
         </button>
       </div>
     </div>

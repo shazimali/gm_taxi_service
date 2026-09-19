@@ -31,6 +31,9 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
   // Server quote cache per vehicle slug
   const [serverQuotes, setServerQuotes] = useState<Record<string, PriceCalculationResult>>({});
 
+  // Tracks whether a fresh quote is being fetched for the vehicle the customer just selected
+  const [quoteLoading, setQuoteLoading] = useState(false);
+
   // 1. Distance & duration estimation (pickup -> stops -> dropoff)
   const stopsKey = stops.join('|');
   useEffect(() => {
@@ -108,6 +111,22 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
     FLEET_DATA.forEach((vehicle) => fetchQuote(vehicle.slug));
   }, [fetchQuote]);
 
+  // Step 2: When the customer picks a vehicle, re-fetch its quote fresh from the
+  // database (base fare / base miles / per-mile rate may have changed since the
+  // background prefetch above ran), showing a loader for the round trip.
+  const selectVehicle = useCallback(
+    async (vSlug: string) => {
+      setSelectedVehicle(vSlug);
+      setQuoteLoading(true);
+      try {
+        await fetchQuote(vSlug);
+      } finally {
+        setQuoteLoading(false);
+      }
+    },
+    [fetchQuote]
+  );
+
   // Client-side fallback calculation if server response is pending
   const calculateVehiclePrice = useCallback(
     (vehicle: (typeof FLEET_DATA)[0]): PriceCalculationResult => {
@@ -152,6 +171,8 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
     setSelectedService,
     selectedVehicle,
     setSelectedVehicle,
+    selectVehicle,
+    quoteLoading,
     hourlyCount,
     setHourlyCount,
     pickupDate,
