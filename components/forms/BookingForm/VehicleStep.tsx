@@ -2,8 +2,8 @@
 
 import type { Vehicle } from '@/data/fleetData';
 import type { PriceCalculationResult } from '@/lib/services';
-import { ArrowRight, Loader2 } from 'lucide-react';
-import React from 'react';
+import { ArrowRight, Loader2, Phone } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 interface VehicleStepProps {
   fleet: Vehicle[];
@@ -33,8 +33,39 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
   onBack,
   onNext,
 }) => {
+  const [phoneDisplay, setPhoneDisplay] = useState('(617) 784-0264');
+  const [phoneTel, setPhoneTel] = useState('16177840264');
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.phoneDisplay) setPhoneDisplay(data.phoneDisplay);
+        if (data.phoneTel) setPhoneTel(data.phoneTel);
+      })
+      .catch(() => {});
+  }, []);
+
   const chosenVehicle =
     fleet.find((v) => v.slug === selectedVehicle) || fleet[0];
+
+  // "Call for Quote" vehicles can't be booked online — if the current/default
+  // selection ever lands on one (e.g. it's first in the fleet list), fall
+  // back to the first bookable vehicle so Step 3 never checks out a vehicle
+  // the customer didn't actually choose.
+  useEffect(() => {
+    if (chosenVehicle?.ctaType === 'quote') {
+      const firstBookable = fleet.find((v) => v.ctaType !== 'quote');
+      if (firstBookable) setSelectedVehicle(firstBookable.slug);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleet]);
+
+  const handleCallForQuote = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = `tel:${phoneTel}`;
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -74,11 +105,12 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
       <div className="booking-vehicles-grid">
         {fleet.map((vehicle) => {
           const isSelected = selectedVehicle === vehicle.slug;
+          const isQuoteOnly = vehicle.ctaType === 'quote';
 
           return (
             <div
               key={vehicle.id}
-              onClick={() => setSelectedVehicle(vehicle.slug)}
+              onClick={() => (isQuoteOnly ? handleCallForQuote() : setSelectedVehicle(vehicle.slug))}
               style={{
                 backgroundColor: '#ffffff',
                 border: isSelected ? '2px solid #b8860b' : '1px solid #e2e8f0',
@@ -105,13 +137,16 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
 
-                {isSelected && (
+                {isQuoteOnly ? (
                   <span
                     style={{
                       position: 'absolute',
                       top: '10px',
                       left: '10px',
-                      backgroundColor: '#b8860b',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      backgroundColor: '#0f172a',
                       color: '#ffffff',
                       fontSize: '0.7rem',
                       fontWeight: 800,
@@ -121,8 +156,28 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
                       boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                     }}
                   >
-                    ✓ Selected
+                    <Phone size={11} /> Call for Quote
                   </span>
+                ) : (
+                  isSelected && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        backgroundColor: '#b8860b',
+                        color: '#ffffff',
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '20px',
+                        textTransform: 'uppercase',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                      }}
+                    >
+                      ✓ Selected
+                    </span>
+                  )
                 )}
               </div>
 
@@ -165,7 +220,9 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
                 <div
                   style={{
                     display: 'flex',
-                    gap: '1rem',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.75rem',
                     fontSize: '0.8rem',
                     color: '#334155',
                     borderTop: '1px solid #f1f5f9',
@@ -173,8 +230,36 @@ export const VehicleStep: React.FC<VehicleStepProps> = ({
                     fontWeight: 600,
                   }}
                 >
-                  <span>👥 {vehicle.passengerCapacity} Passengers</span>
-                  <span>🧳 {vehicle.luggageCapacity} Bags</span>
+                  <span style={{ display: 'flex', gap: '1rem' }}>
+                    <span>👥 {vehicle.passengerCapacity} Passengers</span>
+                    <span>🧳 {vehicle.luggageCapacity} Bags</span>
+                  </span>
+
+                  {isQuoteOnly && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCallForQuote();
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        backgroundColor: '#b8860b',
+                        color: '#ffffff',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        border: 'none',
+                        borderRadius: '20px',
+                        padding: '0.4rem 0.75rem',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <Phone size={12} /> {phoneDisplay}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
