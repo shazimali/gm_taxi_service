@@ -1,12 +1,11 @@
-import React from 'react';
+import {
+  Award,
+  Car,
+  Clock,
+  ShieldCheck,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  ShieldCheck,
-  Award,
-  Clock,
-  Car,
-} from 'lucide-react';
 
 export const metadata = {
   title: 'About Us | GM Limo Services Boston',
@@ -37,7 +36,7 @@ export default function AboutUsPage() {
             <div>
               <span className="about-section-tag">OUR STORY & VISION</span>
               <h2 className="about-section-title">
-                15+ Years of <span className="gold-gradient-text">Uncompromising Quality</span>
+                10+ Years of <span className="gold-gradient-text">Uncompromising Quality</span>
               </h2>
               <p className="about-section-desc">
                 Founded on the principles of punctuality, discretion, and white-glove hospitality, GM Limo Services has grown into Boston’s preferred executive fleet provider.
