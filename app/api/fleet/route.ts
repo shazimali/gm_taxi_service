@@ -17,15 +17,15 @@ export async function GET() {
         slug: v.slug,
         category: v.category,
         model: v.model,
-        tagline: v.description || '',
+        tagline: v.tagline || v.description || '',
         image: v.image || '/images/Businessedited-1024x526-1-e1751891182287.webp',
         passengerCapacity: v.passengerCapacity,
         luggageCapacity: v.luggageCapacity,
         rateHourly: v.rateHourly ?? undefined,
         features: v.features ? JSON.parse(v.features) : [],
         description: v.description || '',
-        amenities: [],
-        ctaType: 'both',
+        amenities: v.amenities ? JSON.parse(v.amenities) : [],
+        ctaType: (v.ctaType as 'book' | 'quote' | 'both') || 'both',
       }));
 
       return NextResponse.json({ fleet });

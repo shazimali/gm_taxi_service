@@ -11,6 +11,7 @@ export interface Vehicle {
   name: string;
   category: string;
   model: string;
+  tagline: string | null;
   passengerCapacity: number;
   luggageCapacity: number;
   rateHourly: number | null;
@@ -20,6 +21,8 @@ export interface Vehicle {
   description: string | null;
   image: string | null;
   features: string | null; // JSON-serialised string[]
+  amenities: string | null; // JSON-serialised string[]
+  ctaType: string; // "both" | "book" | "quote"
   displayOrder: number;
   createdAt: Date;
   updatedAt: Date;
@@ -30,6 +33,7 @@ export interface CreateVehicleData {
   name: string;
   category?: string;
   model?: string;
+  tagline?: string | null;
   passengerCapacity?: number;
   luggageCapacity?: number;
   rateHourly?: number | null;
@@ -39,6 +43,8 @@ export interface CreateVehicleData {
   description?: string | null;
   image?: string | null;
   features?: string | null;
+  amenities?: string | null;
+  ctaType?: string;
   displayOrder?: number;
 }
 

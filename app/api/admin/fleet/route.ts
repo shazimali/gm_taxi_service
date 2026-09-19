@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       slug,
       category,
       model,
+      tagline,
       image,
       passengerCapacity,
       luggageCapacity,
@@ -38,6 +39,8 @@ export async function POST(request: Request) {
       baseMiles,
       perMileRate,
       features,
+      amenities,
+      ctaType,
       description,
       displayOrder,
     } = body;
@@ -52,6 +55,7 @@ export async function POST(request: Request) {
         slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
         category: category || 'Executive',
         model: model || name,
+        tagline: tagline || null,
         image: image || '/images/Businessedited-1024x526-1-e1751891182287.webp',
         passengerCapacity: Number(passengerCapacity) || 4,
         luggageCapacity: Number(luggageCapacity) || 3,
@@ -60,6 +64,8 @@ export async function POST(request: Request) {
         baseMiles: baseMiles ? Number(baseMiles) : null,
         perMileRate: perMileRate ? Number(perMileRate) : null,
         features: JSON.stringify(Array.isArray(features) ? features : []),
+        amenities: JSON.stringify(Array.isArray(amenities) ? amenities : []),
+        ctaType: ctaType || 'both',
         description: description || '',
         displayOrder: Number(displayOrder) || 0,
       },
@@ -85,6 +91,12 @@ export async function PUT(request: Request) {
 
     if (!id) {
       return NextResponse.json({ error: 'Vehicle ID is required' }, { status: 400 });
+    }
+
+    if (tagline !== undefined) data.tagline = tagline || null;
+    if (ctaType !== undefined) data.ctaType = ctaType || 'both';
+    if (amenities !== undefined) {
+      data.amenities = JSON.stringify(Array.isArray(amenities) ? amenities : []);
     }
 
     if (data.passengerCapacity) data.passengerCapacity = Number(data.passengerCapacity);

@@ -65,6 +65,7 @@ model Vehicle {
   name              String
   category          String   @default("Executive")
   model             String   @default("")
+  tagline           String?
   passengerCapacity Int      @default(4)
   luggageCapacity   Int      @default(3)
   rateHourly        Float?
@@ -74,6 +75,8 @@ model Vehicle {
   description       String?  @db.Text
   image             String?
   features          String?  @db.Text // JSON string array
+  amenities         String?  @db.Text // JSON string array
+  ctaType           String   @default("both") // "both" | "book" | "quote"
   displayOrder      Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
