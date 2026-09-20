@@ -18,7 +18,7 @@ interface SiteSettings {
 const DEFAULTS: SiteSettings = {
   phoneDisplay: '(617) 784-0264',
   phoneTel: '16177840264',
-  dispatchEmail: 'info@bostonluxurychauffeur.com',
+  dispatchEmail: 'info@gmlimoservices.com',
   serviceAddress: 'Boston, Massachusetts, USA',
   heroTitleGold: 'Boston Luxury Chauffeur',
   heroTitleMain: '— Logan Airport Car Service',

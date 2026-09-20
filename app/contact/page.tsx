@@ -13,7 +13,7 @@ export default async function ContactPage() {
   let settings = {
     phoneDisplay: '(617) 784-0264',
     phoneTel: '16177840264',
-    dispatchEmail: 'info@bostonluxurychauffeur.com',
+    dispatchEmail: 'info@gmlimoservices.com',
     serviceAddress: 'Greater Boston, MA & New England',
   };
 

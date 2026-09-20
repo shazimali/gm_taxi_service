@@ -61,7 +61,7 @@ export default async function RootLayout({
     phoneDisplay: '(617) 784-0264',
     phoneTel: '16177840264',
     serviceAddress: 'Boston, Massachusetts, USA',
-    dispatchEmail: 'info@bostonluxurychauffeur.com',
+    dispatchEmail: 'info@gmlimoservices.com',
   };
 
   try {

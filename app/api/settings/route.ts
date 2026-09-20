@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({
       phoneDisplay: settings?.phoneDisplay || '(617) 784-0264',
       phoneTel: settings?.phoneTel || '16177840264',
-      dispatchEmail: settings?.dispatchEmail || 'info@bostonluxurychauffeur.com',
+      dispatchEmail: settings?.dispatchEmail || 'info@gmlimoservices.com',
       serviceAddress: settings?.serviceAddress || 'Boston, Massachusetts, USA',
       heroTitleGold: settings?.heroTitleGold || 'Boston Luxury Chauffeur',
       heroTitleMain: settings?.heroTitleMain || '— Logan Airport Car Service',
@@ -23,7 +23,7 @@ export async function GET() {
     return NextResponse.json({
       phoneDisplay: '(617) 784-0264',
       phoneTel: '16177840264',
-      dispatchEmail: 'info@bostonluxurychauffeur.com',
+      dispatchEmail: 'info@gmlimoservices.com',
       serviceAddress: 'Boston, Massachusetts, USA',
     });
   }

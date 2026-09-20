@@ -14,7 +14,13 @@ function money(value: number): string {
  * Renders a paid-ride invoice as a PDF buffer, attached to the
  * ride-completed email sent to the passenger.
  */
-export function generateInvoicePdf(booking: any): Promise<Buffer> {
+export function generateInvoicePdf(
+  booking: any,
+  contact?: { phoneDisplay?: string; dispatchEmail?: string }
+): Promise<Buffer> {
+  const phoneDisplay = contact?.phoneDisplay || '(617) 784-0264';
+  const dispatchEmail = contact?.dispatchEmail || 'info@gmlimoservices.com';
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     const chunks: Buffer[] = [];
@@ -152,7 +158,7 @@ export function generateInvoicePdf(booking: any): Promise<Buffer> {
       .fontSize(9)
       .font('Helvetica')
       .text(
-        'Thank you for riding with GM Limo Services. For questions about this invoice, contact 24/7 dispatch at (617) 784-0264 or info@bostonluxurychauffeur.com.',
+        `Thank you for riding with GM Limo Services. For questions about this invoice, contact 24/7 dispatch at ${phoneDisplay} or ${dispatchEmail}.`,
         50,
         740,
         { width: 495, align: 'center' }

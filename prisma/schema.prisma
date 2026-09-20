@@ -142,7 +142,7 @@ model SiteSetting {
   id                    String   @id @default("default")
   phoneDisplay          String   @default("(617) 784-0264")
   phoneTel              String   @default("16177840264")
-  dispatchEmail         String   @default("info@bostonluxurychauffeur.com")
+  dispatchEmail         String   @default("info@gmlimoservices.com")
   serviceAddress        String   @default("Boston, Massachusetts, USA")
   heroTitleGold         String   @default("Boston Luxury Chauffeur")
   heroTitleMain         String   @default("— Logan Airport Car Service")

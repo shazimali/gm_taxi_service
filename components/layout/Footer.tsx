@@ -173,7 +173,7 @@ export default function Footer({ initialSettings }: FooterProps = {}) {
             <Link href="/liability">Liability</Link>
           </div>
           <div className="footer-bottom__credits">
-            Replicating <a href="https://bostonluxurychauffeur.com" target="_blank" rel="noopener noreferrer">bostonluxurychauffeur.com</a>
+            Replicating <a href="https://gmlimoservices.com" target="_blank" rel="noopener noreferrer">gmlimoservices.com</a>
           </div>
         </div>
       </div>

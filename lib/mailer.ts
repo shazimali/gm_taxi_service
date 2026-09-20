@@ -14,7 +14,7 @@ export const transporter = nodemailer.createTransport({
   auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
 });
 
-const fromAddress = process.env.SMTP_FROM || 'info@bostonluxurychauffeur.com';
+const fromAddress = process.env.SMTP_FROM || 'info@gmlimoservices.com';
 
 export const EMAIL_FROM_CONTACT = `"GM Limo Services" <${fromAddress}>`;
 export const EMAIL_FROM_WELCOME = `"GM Limo Services" <${fromAddress}>`;

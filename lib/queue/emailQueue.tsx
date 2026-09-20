@@ -26,12 +26,14 @@ type EmailJobName =
  */
 export async function enqueueEmail(jobName: EmailJobName, data: any) {
   try {
-    const dispatchEmail = process.env.DISPATCH_EMAIL || 'info@bostonluxurychauffeur.com';
+    const dispatchEmail = process.env.DISPATCH_EMAIL || 'info@gmlimoservices.com';
 
     let phoneDisplay: string | undefined;
+    let contactEmail: string | undefined;
     try {
       const settings = await prisma.siteSetting.findUnique({ where: { id: 'default' } });
       phoneDisplay = settings?.phoneDisplay;
+      contactEmail = settings?.dispatchEmail;
     } catch (e) {
       console.error('[Email] Failed to fetch site settings for phone number:', e);
     }
@@ -83,7 +85,7 @@ export async function enqueueEmail(jobName: EmailJobName, data: any) {
       case 'RIDE_COMPLETED_EMAIL': {
         const { booking } = data;
         const html = await render(<RideCompletedEmail booking={booking} phoneDisplay={phoneDisplay} />);
-        const invoicePdf = await generateInvoicePdf(booking);
+        const invoicePdf = await generateInvoicePdf(booking, { phoneDisplay, dispatchEmail: contactEmail });
         const invoiceAttachment = {
           filename: `Invoice-${booking.confirmationNumber}.pdf`,
           content: invoicePdf,

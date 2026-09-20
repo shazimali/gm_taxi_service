@@ -21,7 +21,7 @@ export async function sendContactEmail(prevState: ContactState, formData: FormDa
     };
   }
 
-  const dispatchEmail = process.env.DISPATCH_EMAIL || 'info@bostonluxurychauffeur.com';
+  const dispatchEmail = process.env.DISPATCH_EMAIL || 'info@gmlimoservices.com';
 
   try {
     await transporter.sendMail({
