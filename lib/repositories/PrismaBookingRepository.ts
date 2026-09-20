@@ -116,6 +116,14 @@ export class PrismaBookingRepository implements IBookingRepository {
     return booking as unknown as Booking;
   }
 
+  async updateSchedule(id: string, data: { pickupDate: string; pickupTime: string }): Promise<Booking> {
+    const booking = await prisma.booking.update({
+      where: { id },
+      data: { pickupDate: data.pickupDate, pickupTime: data.pickupTime },
+    });
+    return booking as unknown as Booking;
+  }
+
   async updatePaymentOutcome(
     id: string,
     data: { status: BookingStatus; paymentStatus: string; stripePaymentIntentId?: string }

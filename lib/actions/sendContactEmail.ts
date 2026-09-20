@@ -1,5 +1,7 @@
 'use server';
 
+import { EMAIL_FROM_CONTACT, transporter } from '@/lib/mailer';
+
 export interface ContactState {
   success?: boolean;
   message?: string;
@@ -19,8 +21,29 @@ export async function sendContactEmail(prevState: ContactState, formData: FormDa
     };
   }
 
-  // Simulate email dispatch / server action handling
-  console.log('Contact inquiry received:', { name, email, phone, service, message });
+  const dispatchEmail = process.env.DISPATCH_EMAIL || 'info@bostonluxurychauffeur.com';
+
+  try {
+    await transporter.sendMail({
+      from: EMAIL_FROM_CONTACT,
+      to: dispatchEmail,
+      replyTo: email,
+      subject: `[Contact Inquiry] ${name}${service ? ` — ${service}` : ''}`,
+      html: `
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
+        <p><strong>Service Interested In:</strong> ${service || 'N/A'}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, '<br/>')}</p>
+      `,
+    });
+  } catch (err: any) {
+    console.error('[Contact Email Error] Failed to send contact inquiry:', err?.message);
+    return {
+      error: 'Sorry, something went wrong sending your message. Please call us directly or try again shortly.',
+    };
+  }
 
   return {
     success: true,

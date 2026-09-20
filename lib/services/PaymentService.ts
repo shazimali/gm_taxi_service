@@ -167,6 +167,17 @@ export class PaymentService implements IPaymentService {
           stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId || undefined,
         });
 
+        // Send the welcome email first for brand-new passengers, then the
+        // booking confirmation, so the account credentials arrive before
+        // the ride details.
+        if (isNewPassenger && tempPassword) {
+          await enqueueEmail('WELCOME_EMAIL', {
+            passengerName: updated.fullName,
+            email: updated.email,
+            tempPassword,
+          });
+        }
+
         await enqueueEmail('BOOKING_CONFIRMATION_EMAIL', {
           booking: {
             confirmationNumber: updated.confirmationNumber,
@@ -186,14 +197,6 @@ export class PaymentService implements IPaymentService {
             estimatedPrice: updated.estimatedPrice,
           },
         });
-
-        if (isNewPassenger && tempPassword) {
-          await enqueueEmail('WELCOME_EMAIL', {
-            passengerName: updated.fullName,
-            email: updated.email,
-            tempPassword,
-          });
-        }
 
         console.log(`[PaymentService] Checkout completed for booking #${updated.confirmationNumber}`);
         break;

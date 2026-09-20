@@ -1,5 +1,5 @@
 // ── BookingCard: Single Responsibility — renders one booking record ─────────────
-// and the passenger-initiated actions (cancel / complete) that apply to it.
+// and the passenger-initiated actions (cancel / update time) that apply to it.
 
 'use client';
 
@@ -8,6 +8,8 @@ import { useState } from 'react';
 import Swal from 'sweetalert2';
 import { BookingRecord } from './usePassengerDashboard';
 import { parseStops } from '@/lib/utils/stops';
+
+const NON_RESCHEDULABLE_STATUSES = new Set(['IN_PROGRESS', 'COMPLETED', 'CANCELLED']);
 
 interface Props {
   booking: BookingRecord;
@@ -44,63 +46,107 @@ function StatusBadge({ booking }: { booking: BookingRecord }) {
 }
 
 export function BookingCard({ booking }: Props) {
-  const [pendingAction, setPendingAction] = useState<'cancel' | 'complete' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'cancel-request' | 'reschedule' | null>(null);
   const [actionError, setActionError] = useState('');
+  const [cancellationRequested, setCancellationRequested] = useState(false);
 
   const isFinal = booking.status === 'CANCELLED' || booking.status === 'COMPLETED';
   const canCancel = !isFinal;
-  const canComplete = !isFinal && booking.paymentStatus === 'HOLD_PLACED';
+  const canReschedule = !NON_RESCHEDULABLE_STATUSES.has(booking.status);
 
-  async function startStripeAction(action: 'cancel' | 'complete') {
-    const confirmation =
-      action === 'complete'
-        ? {
-            title: 'Complete this ride?',
-            text: 'This will capture the pre-authorized hold and mark the ride as completed.',
-            confirmButtonColor: '#166534',
-            confirmButtonText: 'Yes, complete ride',
-          }
-        : {
-            title: 'Cancel this ride?',
-            text: 'This will release the pre-authorized hold and cancel the booking.',
-            confirmButtonColor: '#dc2626',
-            confirmButtonText: 'Yes, cancel ride',
-          };
-
-    const result = await Swal.fire({
-      ...confirmation,
+  async function requestCancellation() {
+    const { value: reason, isConfirmed } = await Swal.fire({
+      title: 'Request Cancellation?',
+      html:
+        '<p style="font-size: 0.85rem; color: #475569; margin: 0 0 12px 0;">' +
+        'This sends a cancellation request to our dispatch team for review — it does not cancel the ' +
+        'booking or release your payment hold immediately. Our team will follow up shortly.' +
+        '</p>' +
+        '<textarea id="swal-cancel-reason" class="swal2-textarea" placeholder="Reason for cancelling (optional)" style="margin-top: 0;"></textarea>',
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Send Cancellation Request',
       icon: 'warning',
       showCancelButton: true,
       cancelButtonText: 'Go back',
       cancelButtonColor: '#64748b',
       reverseButtons: true,
+      focusConfirm: false,
+      preConfirm: () => (document.getElementById('swal-cancel-reason') as HTMLTextAreaElement)?.value?.trim(),
     });
-    if (!result.isConfirmed) return;
+    if (!isConfirmed) return;
 
     setActionError('');
-    setPendingAction(action);
+    setPendingAction('cancel-request');
     try {
-      const res = await fetch(`/api/bookings/${action}`, {
+      const res = await fetch('/api/bookings/request-cancellation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId: booking.id }),
+        body: JSON.stringify({ bookingId: booking.id, reason: reason || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || `Failed to ${action} ride.`);
+        throw new Error(data.error || 'Failed to submit cancellation request.');
+      }
+      setCancellationRequested(true);
+      await Swal.fire({
+        icon: 'success',
+        title: 'Cancellation Requested',
+        text: 'Our dispatch team has been notified and will review your request shortly.',
+        confirmButtonColor: '#166534',
+      });
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to submit cancellation request.');
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function updateRideTime() {
+    const { value: formValues } = await Swal.fire({
+      title: 'Update Pickup Date & Time',
+      html:
+        `<input id="swal-pickup-date" type="date" class="swal2-input" value="${booking.pickupDate}">` +
+        `<input id="swal-pickup-time" type="time" class="swal2-input" value="${booking.pickupTime}">`,
+      focusConfirm: false,
+      showCancelButton: true,
+      cancelButtonText: 'Go back',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Update Time',
+      confirmButtonColor: '#b8860b',
+      reverseButtons: true,
+      preConfirm: () => {
+        const pickupDate = (document.getElementById('swal-pickup-date') as HTMLInputElement)?.value;
+        const pickupTime = (document.getElementById('swal-pickup-time') as HTMLInputElement)?.value;
+        if (!pickupDate || !pickupTime) {
+          Swal.showValidationMessage('Please select both a date and a time.');
+          return;
+        }
+        return { pickupDate, pickupTime };
+      },
+    });
+    if (!formValues) return;
+
+    setActionError('');
+    setPendingAction('reschedule');
+    try {
+      const res = await fetch('/api/bookings/reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: booking.id, ...formValues }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update ride time.');
       }
       await Swal.fire({
         icon: 'success',
-        title: action === 'complete' ? 'Ride Completed' : 'Ride Cancelled',
-        text:
-          action === 'complete'
-            ? 'The ride has been marked as completed and payment has been captured.'
-            : 'The ride has been cancelled and the payment hold has been released.',
+        title: 'Pickup Time Updated',
+        text: 'Your ride has been rescheduled to the new date and time.',
         confirmButtonColor: '#166534',
       });
       window.location.reload();
     } catch (err: any) {
-      setActionError(err.message || `Failed to ${action} ride.`);
+      setActionError(err.message || 'Failed to update ride time.');
       setPendingAction(null);
     }
   }
@@ -141,33 +187,33 @@ export function BookingCard({ booking }: Props) {
         </div>
       </div>
 
-      {(canCancel || canComplete) && (
+      {(canCancel || canReschedule) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9' }}>
-          {canComplete && (
+          {canReschedule && (
             <button
               type="button"
               disabled={pendingAction !== null}
-              onClick={() => startStripeAction('complete')}
+              onClick={() => updateRideTime()}
               style={{
                 padding: '0.6rem 1.25rem',
                 borderRadius: '10px',
                 border: 'none',
-                backgroundColor: '#166534',
+                backgroundColor: '#b8860b',
                 color: '#ffffff',
                 fontWeight: 800,
                 fontSize: '0.85rem',
                 cursor: pendingAction ? 'not-allowed' : 'pointer',
-                opacity: pendingAction && pendingAction !== 'complete' ? 0.6 : 1,
+                opacity: pendingAction && pendingAction !== 'reschedule' ? 0.6 : 1,
               }}
             >
-              {pendingAction === 'complete' ? 'Processing…' : 'Complete Ride'}
+              {pendingAction === 'reschedule' ? 'Processing…' : 'Update Time'}
             </button>
           )}
           {canCancel && (
             <button
               type="button"
-              disabled={pendingAction !== null}
-              onClick={() => startStripeAction('cancel')}
+              disabled={pendingAction !== null || cancellationRequested}
+              onClick={() => requestCancellation()}
               style={{
                 padding: '0.6rem 1.25rem',
                 borderRadius: '10px',
@@ -176,11 +222,15 @@ export function BookingCard({ booking }: Props) {
                 color: '#dc2626',
                 fontWeight: 800,
                 fontSize: '0.85rem',
-                cursor: pendingAction ? 'not-allowed' : 'pointer',
-                opacity: pendingAction && pendingAction !== 'cancel' ? 0.6 : 1,
+                cursor: pendingAction || cancellationRequested ? 'not-allowed' : 'pointer',
+                opacity: (pendingAction && pendingAction !== 'cancel-request') || cancellationRequested ? 0.6 : 1,
               }}
             >
-              {pendingAction === 'cancel' ? 'Processing…' : 'Cancel Ride'}
+              {pendingAction === 'cancel-request'
+                ? 'Sending…'
+                : cancellationRequested
+                ? 'Cancellation Requested'
+                : 'Request Cancellation'}
             </button>
           )}
         </div>

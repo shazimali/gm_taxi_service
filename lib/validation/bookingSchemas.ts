@@ -19,9 +19,15 @@ export const bookingIdSchema = z.object({
   bookingId: z.string().min(1, 'Booking ID is required.'),
 });
 
-export const updateBookingStatusSchema = z.object({
-  id: z.string().min(1, 'Booking ID is required.'),
-  status: z.enum(BOOKING_STATUS_VALUES),
+export const updateBookingScheduleSchema = z.object({
+  bookingId: z.string().min(1, 'Booking ID is required.'),
+  pickupDate: z.string().min(1, 'Pickup date is required.'),
+  pickupTime: z.string().min(1, 'Pickup time is required.'),
+});
+
+export const requestCancellationSchema = z.object({
+  bookingId: z.string().min(1, 'Booking ID is required.'),
+  reason: z.string().trim().max(1000).optional(),
 });
 
 export const listBookingsQuerySchema = z.object({

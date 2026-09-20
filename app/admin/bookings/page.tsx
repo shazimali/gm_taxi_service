@@ -29,7 +29,7 @@ interface Booking {
 
 const STATUSES = ['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const;
 
-type RowAction = 'status' | 'capture' | 'release' | 'delete';
+type RowAction = 'capture' | 'release' | 'delete';
 
 export default function BookingsAdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -70,32 +70,6 @@ export default function BookingsAdminPage() {
       return data?.error || fallback;
     } catch {
       return fallback;
-    }
-  };
-
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    setRowAction(id, 'status');
-    try {
-      const res = await fetch('/api/admin/bookings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: newStatus }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        applyUpdatedBooking(data.booking);
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Update Failed',
-          text: await readErrorMessage(res, 'Failed to update booking status'),
-          confirmButtonColor: '#c5a46d',
-        });
-      }
-    } catch {
-      Swal.fire({ icon: 'error', title: 'Error', text: 'Error updating status', confirmButtonColor: '#c5a46d' });
-    } finally {
-      setRowAction(id, null);
     }
   };
 
@@ -259,9 +233,9 @@ export default function BookingsAdminPage() {
       ) : (
         <div className="admin-booking-list">
           {filteredBookings.map((b) => {
-            const isHold = b.paymentStatus === 'HOLD_PLACED';
             const isCaptured = b.paymentStatus === 'CAPTURED';
             const isCancelled = b.paymentStatus === 'CANCELLED_RELEASED' || b.status === 'CANCELLED';
+            const isFinal = b.status === 'COMPLETED' || b.status === 'CANCELLED';
             const activeAction = rowActions[b.id];
             const isBusy = Boolean(activeAction);
 
@@ -284,20 +258,6 @@ export default function BookingsAdminPage() {
 
                   <div className="admin-booking-card__side">
                     <div className="admin-booking-card__actions">
-                      <select
-                        value={b.status}
-                        data-status={b.status}
-                        onChange={(e) => handleStatusChange(b.id, e.target.value)}
-                        className="admin-status-select"
-                        disabled={isBusy}
-                      >
-                        <option value="PENDING">PENDING</option>
-                        <option value="CONFIRMED">CONFIRMED</option>
-                        <option value="COMPLETED">COMPLETED</option>
-                        <option value="CANCELLED">CANCELLED</option>
-                      </select>
-                      {activeAction === 'status' && <span className="admin-spinner admin-spinner--dark" />}
-
                       <button
                         onClick={() => handleDelete(b.id)}
                         className="admin-btn--danger"
@@ -307,9 +267,9 @@ export default function BookingsAdminPage() {
                       </button>
                     </div>
 
-                    {/* Stripe Hold & Capture Actions */}
+                    {/* Ride Completion / Cancellation Actions */}
                     <div className="admin-booking-card__payment-actions">
-                      {isHold && (
+                      {!isFinal && (
                         <>
                           <button
                             type="button"
@@ -317,7 +277,7 @@ export default function BookingsAdminPage() {
                             className="admin-btn--capture"
                             disabled={isBusy}
                           >
-                            {activeAction === 'capture' ? <><span className="admin-spinner" /> Capturing…</> : <>💳 Capture Payment</>}
+                            {activeAction === 'capture' ? <><span className="admin-spinner" /> Completing…</> : <>✅ Completed</>}
                           </button>
                           <button
                             type="button"
@@ -325,7 +285,7 @@ export default function BookingsAdminPage() {
                             className="admin-btn--release"
                             disabled={isBusy}
                           >
-                            {activeAction === 'release' ? <><span className="admin-spinner admin-spinner--dark" /> Releasing…</> : <>❌ Release Hold</>}
+                            {activeAction === 'release' ? <><span className="admin-spinner admin-spinner--dark" /> Cancelling…</> : <>❌ Cancelled</>}
                           </button>
                         </>
                       )}
@@ -377,7 +337,7 @@ export default function BookingsAdminPage() {
                   </div>
                   <div>
                     <strong className="admin-booking-card__detail-label">Payment Status</strong>
-                    <span style={{ fontWeight: 800, color: isHold ? '#b8860b' : isCaptured ? '#166534' : '#64748b' }}>
+                    <span style={{ fontWeight: 800, color: b.paymentStatus === 'HOLD_PLACED' ? '#b8860b' : isCaptured ? '#166534' : '#64748b' }}>
                       {b.paymentStatus || 'PENDING'}
                     </span>
                   </div>

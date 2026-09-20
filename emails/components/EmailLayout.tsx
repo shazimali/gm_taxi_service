@@ -28,7 +28,7 @@ export function EmailLayout({ previewText, phoneDisplay = '(617) 784-0264', chil
           <Hr style={{ borderColor: '#e4e4e7', margin: 0 }} />
           <Section style={footer}>
             <Text style={{ margin: 0, fontSize: '12px', color: '#71717a' }}>
-              24/7 Dispatch Hotline: <strong>{phoneDisplay}</strong> | Email: <strong>info@bostonluxurychauffeur.com</strong>
+              24/7 Dispatch Hotline: <strong>{phoneDisplay}</strong> | Email: <strong>info@gmlimoservices.com</strong>
             </Text>
             <Text style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#71717a' }}>
               &copy; {new Date().getFullYear()} GM Limo Services Boston. All rights reserved.

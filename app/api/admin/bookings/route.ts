@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { bookingRepository } from '@/lib/repositories';
 import { getAuthenticatedAdmin } from '@/lib/auth';
-import { enqueueEmail } from '@/lib/queue/emailQueue';
 import {
   listBookingsQuerySchema,
-  updateBookingStatusSchema,
   deleteBookingQuerySchema,
 } from '@/lib/validation/bookingSchemas';
 import { InvalidStateError, NotFoundError } from '@/lib/errors';
@@ -35,36 +33,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ bookings, page, limit });
   } catch (error) {
     return toErrorResponse(error, 'Failed to fetch bookings');
-  }
-}
-
-// PUT update booking status
-export async function PUT(request: Request) {
-  try {
-    const admin = await getAuthenticatedAdmin();
-    if (!admin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { id, status } = updateBookingStatusSchema.parse(await request.json());
-
-    const existing = await bookingRepository.findById(id);
-    if (!existing) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
-    }
-    const wasAlreadyFinal = existing.status === 'COMPLETED' || existing.status === 'CANCELLED';
-
-    const booking = await bookingRepository.updateStatus(id, status);
-
-    if (!wasAlreadyFinal && status === 'COMPLETED') {
-      await enqueueEmail('RIDE_COMPLETED_EMAIL', { booking });
-    } else if (!wasAlreadyFinal && status === 'CANCELLED') {
-      await enqueueEmail('RIDE_CANCELLED_EMAIL', { booking });
-    }
-
-    return NextResponse.json({ success: true, booking });
-  } catch (error) {
-    return toErrorResponse(error, 'Failed to update booking status');
   }
 }
 

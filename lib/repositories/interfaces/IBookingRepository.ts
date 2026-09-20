@@ -97,6 +97,9 @@ export interface IBookingRepository {
   /** Update payment status (Stripe webhook) */
   updatePaymentStatus(id: string, paymentStatus: string): Promise<Booking>;
 
+  /** Update pickup date/time (passenger self-service reschedule) */
+  updateSchedule(id: string, data: { pickupDate: string; pickupTime: string }): Promise<Booking>;
+
   /**
    * Atomically update booking status + payment status together (payment
    * capture/release flows) — avoids two separate writes leaving a booking

@@ -56,7 +56,17 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
           },
         });
 
-        // Trigger confirmation email
+        // Send the welcome email first for brand-new passengers, then the
+        // booking confirmation, so the account credentials arrive before
+        // the ride details.
+        if (isNewPassenger && tempPassword) {
+          await enqueueEmail('WELCOME_EMAIL', {
+            passengerName: booking.fullName,
+            email: booking.email,
+            tempPassword,
+          });
+        }
+
         await enqueueEmail('BOOKING_CONFIRMATION_EMAIL', {
           booking: {
             confirmationNumber: booking.confirmationNumber,
@@ -76,14 +86,6 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
             estimatedPrice: booking.estimatedPrice,
           },
         });
-
-        if (isNewPassenger && tempPassword) {
-          await enqueueEmail('WELCOME_EMAIL', {
-            passengerName: booking.fullName,
-            email: booking.email,
-            tempPassword,
-          });
-        }
       }
     } catch (err: any) {
       console.error('[ThankYouPage] Stripe session retrieval error:', err?.message);
