@@ -27,7 +27,9 @@ export async function POST(request: Request) {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const origin = new URL(request.url).origin;
+    // Prefer APP_URL so links are correct behind a reverse proxy or when the
+    // server is bound to 0.0.0.0, where request.url's origin isn't the public host.
+    const origin = process.env.APP_URL || new URL(request.url).origin;
 
     const admin = await adminRepository.findByEmail(cleanEmail);
     if (admin) {
