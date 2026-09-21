@@ -1,14 +1,14 @@
 #!/bin/sh
 set -e
 
-# This project has no prisma/migrations history — schema is kept in sync via
-# `prisma db push`. Running it here (instead of as a separate manual step)
-# means every deploy automatically applies additive schema changes before the
-# server starts. Non-additive changes (e.g. a dropped/renamed column) will
-# make this fail loudly rather than silently accept data loss — that's
-# intentional; resolve those manually against the production DB first.
-echo "[entrypoint] Syncing database schema (prisma db push)..."
-npx prisma db push --skip-generate
+# Schema changes are applied via versioned migrations (prisma/migrations),
+# generated locally with `prisma migrate dev` and committed to git. Running
+# `migrate deploy` here applies any pending migrations before the server
+# starts. Unlike `db push`, this never guesses or warns about data loss —
+# the SQL was already reviewed and committed, so there's nothing to confirm
+# at deploy time.
+echo "[entrypoint] Applying database migrations (prisma migrate deploy)..."
+npx prisma migrate deploy
 
 echo "[entrypoint] Starting server..."
 exec node server.js

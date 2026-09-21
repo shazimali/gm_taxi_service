@@ -133,11 +133,12 @@ DISPATCH_EMAIL="info@bostonluxurychauffeur.com"
    npm install
    ```
 
-2. **Sync Database Schema & Seed Data**:
+2. **Apply Migrations & Seed Data**:
    ```bash
-   npx prisma db push
+   npx prisma migrate dev
    npx tsx prisma/seed.ts
    ```
+   When you change `prisma/schema.prisma`, run `npx prisma migrate dev --name <describe-change>` to generate a new migration file — commit it along with the schema change.
 
 3. **Start Development Server**:
    ```bash
@@ -161,10 +162,10 @@ To deploy on your VPS using Docker Compose:
    ```bash
    docker compose up -d --build
    ```
+   Pending migrations in `prisma/migrations` are applied automatically on container start (`prisma migrate deploy`, run by `docker/entrypoint.sh`) — no manual step needed.
 
-2. **Run Prisma Migrations & Database Seeding inside Docker**:
+2. **Seed Data** (first-time setup only):
    ```bash
-   docker exec -it gm_taxi_app npx prisma db push
    docker exec -it gm_taxi_app npx tsx prisma/seed.ts
    ```
 
