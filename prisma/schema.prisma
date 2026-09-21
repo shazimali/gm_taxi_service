@@ -130,6 +130,7 @@ model Booking {
   stripeCheckoutSessionId String?    @unique
   paymentStatus           String     @default("PENDING") // PENDING, HOLD_PLACED, CAPTURED, CANCELLED_RELEASED, FAILED
   estimatedPrice          Float?
+  capturedAmount          Float? // actual dollar amount captured — may be less than estimatedPrice on a partial capture
 
   // Pricing breakdown
   fareMode   String? // "hourly" | "metered"
@@ -138,6 +139,7 @@ model Booking {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // soft delete — set once hold is released/refunded and admin deletes the record
 
   @@map("bookings")
 }

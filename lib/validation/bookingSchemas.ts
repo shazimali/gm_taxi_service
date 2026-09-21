@@ -19,6 +19,11 @@ export const bookingIdSchema = z.object({
   bookingId: z.string().min(1, 'Booking ID is required.'),
 });
 
+export const captureBookingSchema = z.object({
+  bookingId: z.string().min(1, 'Booking ID is required.'),
+  capturePercent: z.coerce.number().int().min(1).max(100).optional(),
+});
+
 export const updateBookingScheduleSchema = z.object({
   bookingId: z.string().min(1, 'Booking ID is required.'),
   pickupDate: z.string().min(1, 'Pickup date is required.'),
@@ -30,11 +35,15 @@ export const requestCancellationSchema = z.object({
   reason: z.string().trim().max(1000).optional(),
 });
 
+const YMD_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 export const listBookingsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   status: z.enum(BOOKING_STATUS_VALUES).optional(),
   email: z.string().email().optional(),
+  dateFrom: z.string().regex(YMD_REGEX, 'dateFrom must be in yyyy-MM-dd format.').optional(),
+  dateTo: z.string().regex(YMD_REGEX, 'dateTo must be in yyyy-MM-dd format.').optional(),
 });
 
 export const deleteBookingQuerySchema = z.object({

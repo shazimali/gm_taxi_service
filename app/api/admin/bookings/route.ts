@@ -8,7 +8,10 @@ import {
 import { InvalidStateError, NotFoundError } from '@/lib/errors';
 import { toErrorResponse } from '@/lib/api/errorResponse';
 
-const ACTIVE_PAYMENT_STATUSES = new Set(['HOLD_PLACED', 'CAPTURED']);
+// A booking may only be (soft-)deleted once any held/captured funds have been
+// returned to the passenger — i.e. the hold was released. Anything else means
+// money is still at stake and must be resolved via release/capture first.
+const DELETABLE_PAYMENT_STATUSES = new Set(['PENDING', 'CANCELLED_RELEASED', 'FAILED']);
 
 // GET bookings (paginated)
 export async function GET(request: Request) {
@@ -19,7 +22,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const { page, limit, status, email } = listBookingsQuerySchema.parse(
+    const { page, limit, status, email, dateFrom, dateTo } = listBookingsQuerySchema.parse(
       Object.fromEntries(searchParams)
     );
 
@@ -28,6 +31,8 @@ export async function GET(request: Request) {
       email,
       limit,
       offset: (page - 1) * limit,
+      dateFrom,
+      dateTo,
     });
 
     return NextResponse.json({ bookings, page, limit });
@@ -51,9 +56,9 @@ export async function DELETE(request: Request) {
     if (!existing) {
       throw new NotFoundError('Booking not found');
     }
-    if (ACTIVE_PAYMENT_STATUSES.has(existing.paymentStatus)) {
+    if (!DELETABLE_PAYMENT_STATUSES.has(existing.paymentStatus)) {
       throw new InvalidStateError(
-        'Release or capture/refund the payment before deleting this booking.'
+        'Release the hold or refund the passenger before deleting this booking.'
       );
     }
 

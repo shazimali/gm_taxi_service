@@ -19,10 +19,20 @@ function StatusBadge({ booking }: { booking: BookingRecord }) {
   const isHold      = booking.paymentStatus === 'HOLD_PLACED';
   const isCaptured  = booking.paymentStatus === 'CAPTURED';
   const isCancelled = booking.paymentStatus === 'CANCELLED_RELEASED' || booking.status === 'CANCELLED';
+  const isPartial   = isCaptured
+    && booking.capturedAmount != null
+    && booking.estimatedPrice != null
+    && booking.capturedAmount < booking.estimatedPrice;
 
   if (isHold) return (
     <span style={{ backgroundColor: 'rgba(184, 134, 11, 0.12)', color: '#b8860b', border: '1px solid #b8860b', padding: '0.35rem 0.85rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
       🔒 Hold Placed (Pre-Authorized)
+    </span>
+  );
+
+  if (isPartial) return (
+    <span style={{ backgroundColor: '#fff7ed', color: '#9a3412', border: '1px solid #fed7aa', padding: '0.35rem 0.85rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+      <CheckCircle2 size={14} /> Partially Charged — ${booking.capturedAmount!.toFixed(2)} of ${booking.estimatedPrice.toFixed(2)}
     </span>
   );
 
@@ -51,6 +61,10 @@ export function BookingCard({ booking }: Props) {
   const [cancellationRequested, setCancellationRequested] = useState(false);
 
   const isFinal = booking.status === 'CANCELLED' || booking.status === 'COMPLETED';
+  const isPartialCapture = booking.paymentStatus === 'CAPTURED'
+    && booking.capturedAmount != null
+    && booking.estimatedPrice != null
+    && booking.capturedAmount < booking.estimatedPrice;
   const canCancel = !isFinal;
   const canReschedule = !NON_RESCHEDULABLE_STATUSES.has(booking.status);
 
@@ -185,6 +199,14 @@ export function BookingCard({ booking }: Props) {
             ${booking.estimatedPrice ? booking.estimatedPrice.toFixed(2) : '127.50'}
           </strong>
         </div>
+        {isPartialCapture && (
+          <div>
+            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>Amount Charged</span>
+            <strong style={{ color: '#9a3412', fontSize: '1.1rem', fontWeight: 800 }}>
+              ${booking.capturedAmount!.toFixed(2)}
+            </strong>
+          </div>
+        )}
       </div>
 
       {(canCancel || canReschedule) && (

@@ -23,8 +23,9 @@ export default async function DashboardPage() {
       await Promise.all([
         prisma.vehicle.count(),
         prisma.service.count(),
-        prisma.booking.count(),
+        prisma.booking.count({ where: { deletedAt: null } }),
         prisma.booking.findMany({
+          where: { deletedAt: null },
           take: 6,
           orderBy: { createdAt: 'desc' },
           select: {

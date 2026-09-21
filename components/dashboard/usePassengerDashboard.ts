@@ -18,6 +18,7 @@ export interface BookingRecord {
   paymentStatus: string;
   status: string;
   estimatedPrice: number;
+  capturedAmount: number | null;
   createdAt: string;
 }
 

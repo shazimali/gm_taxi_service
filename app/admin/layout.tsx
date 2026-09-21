@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/auth';
-import { Bell, Moon, Search } from 'lucide-react';
+import { Bell, Menu, Moon, Search } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
 import './admin.css';
@@ -27,6 +27,13 @@ export default async function AdminLayout({
 
   return (
     <div className="admin-layout admin-body">
+      {/* Pure-CSS mobile sidebar toggle: checked state drives sidebar/backdrop visibility */}
+      <input
+        type="checkbox"
+        id="admin-sidebar-toggle"
+        className="admin-sidebar-toggle-checkbox"
+      />
+
       {/* ── TAILADMIN SIDEBAR ────────────────── */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar__header">
@@ -49,10 +56,24 @@ export default async function AdminLayout({
         </div>
       </aside>
 
+      <label
+        htmlFor="admin-sidebar-toggle"
+        className="admin-sidebar-backdrop"
+        aria-hidden="true"
+      />
+
       {/* ── TAILADMIN MAIN WRAPPER ───────────── */}
       <div className="admin-main-wrapper">
         {/* Top Header */}
         <header className="admin-header">
+          <label
+            htmlFor="admin-sidebar-toggle"
+            className="admin-sidebar-toggle-btn"
+            aria-label="Toggle menu"
+          >
+            <Menu size={20} />
+          </label>
+
           <div className="admin-header__search">
             <Search size={18} color="#64748b" />
             <input

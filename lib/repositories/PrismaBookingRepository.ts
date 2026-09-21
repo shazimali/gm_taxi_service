@@ -15,29 +15,29 @@ import type {
 
 export class PrismaBookingRepository implements IBookingRepository {
   async findById(id: string): Promise<Booking | null> {
-    const booking = await prisma.booking.findUnique({
-      where: { id },
+    const booking = await prisma.booking.findFirst({
+      where: { id, deletedAt: null },
     });
     return (booking as unknown as Booking) ?? null;
   }
 
   async findByConfirmationNumber(confirmationNumber: string): Promise<Booking | null> {
-    const booking = await prisma.booking.findUnique({
-      where: { confirmationNumber },
+    const booking = await prisma.booking.findFirst({
+      where: { confirmationNumber, deletedAt: null },
     });
     return (booking as unknown as Booking) ?? null;
   }
 
   async findByCheckoutSessionId(stripeCheckoutSessionId: string): Promise<Booking | null> {
-    const booking = await prisma.booking.findUnique({
-      where: { stripeCheckoutSessionId },
+    const booking = await prisma.booking.findFirst({
+      where: { stripeCheckoutSessionId, deletedAt: null },
     });
     return (booking as unknown as Booking) ?? null;
   }
 
   async findByPaymentIntentId(stripePaymentIntentId: string): Promise<Booking | null> {
-    const booking = await prisma.booking.findUnique({
-      where: { stripePaymentIntentId },
+    const booking = await prisma.booking.findFirst({
+      where: { stripePaymentIntentId, deletedAt: null },
     });
     return (booking as unknown as Booking) ?? null;
   }
@@ -47,10 +47,18 @@ export class PrismaBookingRepository implements IBookingRepository {
     email?: string;
     limit?: number;
     offset?: number;
+    dateFrom?: string;
+    dateTo?: string;
   }): Promise<Booking[]> {
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { deletedAt: null };
     if (options?.status) where.status = options.status;
     if (options?.email)  where.email  = options.email.toLowerCase();
+    if (options?.dateFrom || options?.dateTo) {
+      where.pickupDate = {
+        ...(options.dateFrom ? { gte: options.dateFrom } : {}),
+        ...(options.dateTo ? { lte: options.dateTo } : {}),
+      };
+    }
 
     const bookings = await prisma.booking.findMany({
       where,
@@ -63,7 +71,7 @@ export class PrismaBookingRepository implements IBookingRepository {
 
   async findByPassengerId(passengerId: string): Promise<Booking[]> {
     const bookings = await prisma.booking.findMany({
-      where: { passengerId },
+      where: { passengerId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
     return bookings as unknown as Booking[];
@@ -126,7 +134,12 @@ export class PrismaBookingRepository implements IBookingRepository {
 
   async updatePaymentOutcome(
     id: string,
-    data: { status: BookingStatus; paymentStatus: string; stripePaymentIntentId?: string }
+    data: {
+      status: BookingStatus;
+      paymentStatus: string;
+      stripePaymentIntentId?: string;
+      capturedAmount?: number;
+    }
   ): Promise<Booking> {
     const booking = await prisma.booking.update({
       where: { id },
@@ -134,13 +147,14 @@ export class PrismaBookingRepository implements IBookingRepository {
         status: data.status,
         paymentStatus: data.paymentStatus,
         ...(data.stripePaymentIntentId ? { stripePaymentIntentId: data.stripePaymentIntentId } : {}),
+        ...(data.capturedAmount !== undefined ? { capturedAmount: data.capturedAmount } : {}),
       },
     });
     return booking as unknown as Booking;
   }
 
   async delete(id: string): Promise<void> {
-    await prisma.booking.delete({ where: { id } });
+    await prisma.booking.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 }
 

@@ -36,11 +36,13 @@ export interface Booking {
   stripeCheckoutSessionId?: string | null;
   paymentStatus: string;
   estimatedPrice: number | null;
+  capturedAmount: number | null;
   fareMode?: string | null;
   tipPercent?: number | null;
   tipAmount?: number | null;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 export interface CreateBookingData {
@@ -82,8 +84,15 @@ export interface IBookingRepository {
   /** Find a booking by Stripe PaymentIntent ID */
   findByPaymentIntentId(paymentIntentId: string): Promise<Booking | null>;
 
-  /** List all bookings (admin) — most recent first */
-  findAll(options?: { status?: BookingStatus; email?: string; limit?: number; offset?: number }): Promise<Booking[]>;
+  /** List all bookings (admin) — most recent first. dateFrom/dateTo filter on pickupDate ('yyyy-MM-dd', inclusive) */
+  findAll(options?: {
+    status?: BookingStatus;
+    email?: string;
+    limit?: number;
+    offset?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<Booking[]>;
 
   /** List all bookings belonging to a specific passenger */
   findByPassengerId(passengerId: string): Promise<Booking[]>;
@@ -107,9 +116,14 @@ export interface IBookingRepository {
    */
   updatePaymentOutcome(
     id: string,
-    data: { status: BookingStatus; paymentStatus: string; stripePaymentIntentId?: string }
+    data: {
+      status: BookingStatus;
+      paymentStatus: string;
+      stripePaymentIntentId?: string;
+      capturedAmount?: number;
+    }
   ): Promise<Booking>;
 
-  /** Permanently delete a booking (admin workflow) */
+  /** Soft-delete a booking (admin workflow) — sets deletedAt instead of removing the row */
   delete(id: string): Promise<void>;
 }

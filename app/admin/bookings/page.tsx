@@ -24,18 +24,40 @@ interface Booking {
   stripePaymentIntentId?: string | null;
   paymentStatus?: string | null;
   estimatedPrice?: number | null;
+  capturedAmount?: number | null;
   createdAt: string;
 }
 
-const STATUSES = ['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const;
+const STATUSES = ['ALL', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const;
+
+// Mirrors DELETABLE_PAYMENT_STATUSES in app/api/admin/bookings/route.ts — a booking
+// can only be deleted once any held/captured funds are back with the passenger.
+const DELETABLE_PAYMENT_STATUSES = new Set(['PENDING', 'CANCELLED_RELEASED', 'FAILED']);
 
 type RowAction = 'capture' | 'release' | 'delete';
+
+function formatYMD(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function currentMonthRange(): { from: string; to: string } {
+  const now = new Date();
+  return {
+    from: formatYMD(new Date(now.getFullYear(), now.getMonth(), 1)),
+    to: formatYMD(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  };
+}
 
 export default function BookingsAdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [rowActions, setRowActions] = useState<Record<string, RowAction>>({});
+  const [dateFrom, setDateFrom] = useState<string>(() => currentMonthRange().from);
+  const [dateTo, setDateTo] = useState<string>(() => currentMonthRange().to);
 
   const setRowAction = (id: string, action: RowAction | null) => {
     setRowActions((prev) => {
@@ -46,9 +68,13 @@ export default function BookingsAdminPage() {
     });
   };
 
-  const fetchBookings = async () => {
+  const fetchBookings = async (from: string, to: string) => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/admin/bookings', { cache: 'no-store' });
+      const params = new URLSearchParams();
+      if (from) params.set('dateFrom', from);
+      if (to) params.set('dateTo', to);
+      const res = await fetch(`/api/admin/bookings?${params.toString()}`, { cache: 'no-store' });
       const data = await res.json();
       if (res.ok) setBookings(data.bookings || []);
     } catch (e) {
@@ -58,7 +84,7 @@ export default function BookingsAdminPage() {
     }
   };
 
-  useEffect(() => { fetchBookings(); }, []);
+  useEffect(() => { fetchBookings(dateFrom, dateTo); }, [dateFrom, dateTo]);
 
   const applyUpdatedBooking = (updated: Booking) => {
     setBookings((prev) => prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)));
@@ -76,23 +102,36 @@ export default function BookingsAdminPage() {
   const handleCapturePayment = async (bookingId: string) => {
     const result = await Swal.fire({
       icon: 'question',
-      title: 'Capture Payment?',
-      text: 'Passenger has reached destination? Confirm capturing held funds now.',
+      title: 'Capture Payment',
+      text: 'Passenger has reached destination? Enter what percentage of the held amount to capture — the rest is released back to the passenger.',
+      input: 'number',
+      inputLabel: 'Capture percentage (%)',
+      inputValue: 100,
+      inputAttributes: { min: '1', max: '100', step: '1' },
       showCancelButton: true,
-      confirmButtonText: 'Yes, capture funds',
+      confirmButtonText: 'Capture Payment',
       cancelButtonText: 'Go back',
       confirmButtonColor: '#166534',
       cancelButtonColor: '#64748b',
       reverseButtons: true,
+      inputValidator: (value) => {
+        const num = Number(value);
+        if (!value || !Number.isFinite(num) || num < 1 || num > 100) {
+          return 'Enter a percentage between 1 and 100.';
+        }
+        return undefined;
+      },
     });
     if (!result.isConfirmed) return;
+
+    const capturePercent = Number(result.value);
 
     setRowAction(bookingId, 'capture');
     try {
       const res = await fetch('/api/admin/bookings/capture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingId }),
+        body: JSON.stringify({ bookingId, capturePercent }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -100,7 +139,9 @@ export default function BookingsAdminPage() {
         Swal.fire({
           icon: 'success',
           title: 'Payment Captured',
-          text: 'Payment captured successfully!',
+          text: capturePercent < 100
+            ? `Captured ${capturePercent}% of the held amount; the remainder was released to the passenger.`
+            : 'Payment captured successfully!',
           confirmButtonColor: '#166534',
         });
       } else {
@@ -221,6 +262,24 @@ export default function BookingsAdminPage() {
               {s}
             </button>
           ))}
+          <label className="admin-filter-date">
+            From
+            <input
+              type="date"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+          </label>
+          <label className="admin-filter-date">
+            To
+            <input
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </label>
         </div>
       </div>
 
@@ -238,6 +297,7 @@ export default function BookingsAdminPage() {
             const isFinal = b.status === 'COMPLETED' || b.status === 'CANCELLED';
             const activeAction = rowActions[b.id];
             const isBusy = Boolean(activeAction);
+            const canDelete = DELETABLE_PAYMENT_STATUSES.has(b.paymentStatus || 'PENDING');
 
             return (
               <div key={b.id} className="admin-booking-card">
@@ -257,15 +317,17 @@ export default function BookingsAdminPage() {
                   </div>
 
                   <div className="admin-booking-card__side">
-                    <div className="admin-booking-card__actions">
-                      <button
-                        onClick={() => handleDelete(b.id)}
-                        className="admin-btn--danger"
-                        disabled={isBusy}
-                      >
-                        {activeAction === 'delete' ? <><span className="admin-spinner admin-spinner--dark" /> Deleting…</> : 'Delete'}
-                      </button>
-                    </div>
+                    {canDelete && (
+                      <div className="admin-booking-card__actions">
+                        <button
+                          onClick={() => handleDelete(b.id)}
+                          className="admin-btn--danger"
+                          disabled={isBusy}
+                        >
+                          {activeAction === 'delete' ? <><span className="admin-spinner admin-spinner--dark" /> Deleting…</> : 'Delete'}
+                        </button>
+                      </div>
+                    )}
 
                     {/* Ride Completion / Cancellation Actions */}
                     <div className="admin-booking-card__payment-actions">
@@ -292,7 +354,7 @@ export default function BookingsAdminPage() {
 
                       {isCaptured && (
                         <span className="admin-payment-badge admin-payment-badge--captured">
-                          ✅ Payment Captured
+                          ✅ Payment Captured{b.capturedAmount != null ? ` — $${b.capturedAmount.toFixed(2)}` : ''}
                         </span>
                       )}
 

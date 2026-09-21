@@ -44,18 +44,33 @@ export class PaymentService implements IPaymentService {
       throw new InvalidStateError('This ride does not have an active payment hold to finalize.');
     }
 
+    const capturePercent = options.capturePercent ?? 100;
+    if (!Number.isFinite(capturePercent) || capturePercent <= 0 || capturePercent > 100) {
+      throw new InvalidStateError('Capture percentage must be between 1 and 100.');
+    }
+
+    let capturedAmount: number | undefined;
+
     if (booking.stripePaymentIntentId) {
+      const intent = await this.stripe.paymentIntents.retrieve(booking.stripePaymentIntentId);
+      // Stripe releases the uncaptured remainder automatically on a partial capture.
+      const amountToCaptureCents =
+        capturePercent < 100 ? Math.round(intent.amount * (capturePercent / 100)) : intent.amount;
+
       await this.ensurePaymentIntentReachesState(
         booking.stripePaymentIntentId,
-        (id) => this.stripe.paymentIntents.capture(id),
+        (id) => this.stripe.paymentIntents.capture(id, { amount_to_capture: amountToCaptureCents }),
         'succeeded',
         'capture'
       );
+
+      capturedAmount = amountToCaptureCents / 100;
     }
 
     const updated = await this.bookingRepo.updatePaymentOutcome(bookingId, {
       status: 'COMPLETED',
       paymentStatus: 'CAPTURED',
+      capturedAmount,
     });
 
     await enqueueEmail('RIDE_COMPLETED_EMAIL', { booking: updated });

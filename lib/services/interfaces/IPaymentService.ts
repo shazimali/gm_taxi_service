@@ -14,6 +14,8 @@ export interface CaptureOptions {
   requirePassengerId?: string;
   /** Rejects the capture unless the booking currently has an active hold. */
   requireHoldPlaced?: boolean;
+  /** Percentage (1-100) of the authorized hold to capture. Defaults to 100 (full capture). */
+  capturePercent?: number;
 }
 
 export interface ReleaseHoldOptions {
