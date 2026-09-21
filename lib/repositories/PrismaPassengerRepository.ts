@@ -63,6 +63,34 @@ export class PrismaPassengerRepository implements IPassengerRepository {
       data: { tokenVersion: { increment: 1 } },
     });
   }
+
+  async setResetToken(id: string, tokenHash: string, expiresAt: Date): Promise<void> {
+    const client = getClient();
+    await client.passenger.update({
+      where: { id },
+      data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt },
+    });
+  }
+
+  async findByResetToken(tokenHash: string): Promise<Passenger | null> {
+    const client = getClient();
+    return await client.passenger.findFirst({
+      where: { resetTokenHash: tokenHash, resetTokenExpiresAt: { gt: new Date() } },
+    }) ?? null;
+  }
+
+  async resetPassword(id: string, passwordHash: string): Promise<void> {
+    const client = getClient();
+    await client.passenger.update({
+      where: { id },
+      data: {
+        passwordHash,
+        tokenVersion: { increment: 1 },
+        resetTokenHash: null,
+        resetTokenExpiresAt: null,
+      },
+    });
+  }
 }
 
 /** Singleton instance — import this in route handlers */

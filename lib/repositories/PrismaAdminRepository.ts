@@ -33,6 +33,33 @@ export class PrismaAdminRepository implements IAdminRepository {
       data: { tokenVersion: { increment: 1 } },
     });
   }
+
+  async setResetToken(id: string, tokenHash: string, expiresAt: Date): Promise<void> {
+    await prisma.admin.update({
+      where: { id },
+      data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt },
+    });
+  }
+
+  async findByResetToken(tokenHash: string): Promise<Admin | null> {
+    const admin = await prisma.admin.findFirst({
+      where: { resetTokenHash: tokenHash, resetTokenExpiresAt: { gt: new Date() } },
+      select: { id: true, email: true, name: true, tokenVersion: true, createdAt: true },
+    });
+    return admin ?? null;
+  }
+
+  async resetPassword(id: string, passwordHash: string): Promise<void> {
+    await prisma.admin.update({
+      where: { id },
+      data: {
+        password: passwordHash,
+        tokenVersion: { increment: 1 },
+        resetTokenHash: null,
+        resetTokenExpiresAt: null,
+      },
+    });
+  }
 }
 
 /** Singleton instance — import this in route handlers */

@@ -18,6 +18,7 @@ const fromAddress = process.env.SMTP_FROM || 'info@gmlimoservices.com';
 
 export const EMAIL_FROM_CONTACT = `"GM Limo Services" <${fromAddress}>`;
 export const EMAIL_FROM_WELCOME = `"GM Limo Services" <${fromAddress}>`;
+export const EMAIL_FROM_SECURITY = `"GM Limo Services" <${fromAddress}>`;
 
 // ── No-reply mailbox (NO_REPLY_SMTP_*) — used for ride booking, completion
 // and cancellation notifications and other automated/transactional emails ──

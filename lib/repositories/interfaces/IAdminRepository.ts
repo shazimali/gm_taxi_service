@@ -24,4 +24,16 @@ export interface IAdminRepository {
 
   /** Increment tokenVersion to invalidate all current sessions */
   incrementTokenVersion(id: string): Promise<void>;
+
+  /** Store a hashed password-reset token and its expiry for this admin */
+  setResetToken(id: string, tokenHash: string, expiresAt: Date): Promise<void>;
+
+  /** Find an admin by a hashed reset token, if the token hasn't expired */
+  findByResetToken(tokenHash: string): Promise<Admin | null>;
+
+  /**
+   * Set a new password, clear the reset token, and revoke all existing
+   * sessions (tokenVersion bump) — all in one update.
+   */
+  resetPassword(id: string, passwordHash: string): Promise<void>;
 }

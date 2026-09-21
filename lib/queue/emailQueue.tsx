@@ -5,8 +5,9 @@ import { RideCompletedEmail } from '@/emails/RideCompletedEmail';
 import { RideRescheduledEmail } from '@/emails/RideRescheduledEmail';
 import { CancellationRequestedEmail } from '@/emails/CancellationRequestedEmail';
 import { WelcomeEmail } from '@/emails/WelcomeEmail';
+import { PasswordResetEmail } from '@/emails/PasswordResetEmail';
 import { generateInvoicePdf } from '@/lib/pdf/invoice';
-import { EMAIL_FROM_BOT, EMAIL_FROM_DISPATCH, EMAIL_FROM_WELCOME, noReplyTransporter, transporter } from '@/lib/mailer';
+import { EMAIL_FROM_BOT, EMAIL_FROM_DISPATCH, EMAIL_FROM_SECURITY, EMAIL_FROM_WELCOME, noReplyTransporter, transporter } from '@/lib/mailer';
 import { prisma } from '@/lib/prisma';
 
 export const EMAIL_QUEUE_NAME = 'gm_taxi_email_queue'; // kept for reference
@@ -17,7 +18,8 @@ type EmailJobName =
   | 'RIDE_COMPLETED_EMAIL'
   | 'RIDE_CANCELLED_EMAIL'
   | 'RIDE_RESCHEDULED_EMAIL'
-  | 'RIDE_CANCELLATION_REQUESTED_EMAIL';
+  | 'RIDE_CANCELLATION_REQUESTED_EMAIL'
+  | 'PASSWORD_RESET_EMAIL';
 
 /**
  * Send email directly via Gmail SMTP (nodemailer), using React Email
@@ -190,6 +192,21 @@ export async function enqueueEmail(jobName: EmailJobName, data: any) {
         });
 
         console.log(`[Email] Cancellation request notified dispatch for #${booking.confirmationNumber}`);
+        break;
+      }
+
+      case 'PASSWORD_RESET_EMAIL': {
+        const { name, email, resetUrl } = data;
+        const html = await render(<PasswordResetEmail name={name} resetUrl={resetUrl} phoneDisplay={phoneDisplay} />);
+
+        await transporter.sendMail({
+          from: EMAIL_FROM_SECURITY,
+          to: email,
+          subject: 'Reset Your GM Limo Services Password',
+          html,
+        });
+
+        console.log(`[Email] Password reset email sent to ${email}`);
         break;
       }
 

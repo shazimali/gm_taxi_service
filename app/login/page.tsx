@@ -157,6 +157,9 @@ function LoginForm() {
               <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>
                 Password
               </label>
+              <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: '#c5a46d', fontWeight: 600, textDecoration: 'none' }}>
+                Forgot password?
+              </Link>
             </div>
             <div style={{ position: 'relative' }}>
               <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />

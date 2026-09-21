@@ -40,4 +40,16 @@ export interface IPassengerRepository {
 
   /** Increment tokenVersion to revoke all active sessions */
   incrementTokenVersion(id: string): Promise<void>;
+
+  /** Store a hashed password-reset token and its expiry for this passenger */
+  setResetToken(id: string, tokenHash: string, expiresAt: Date): Promise<void>;
+
+  /** Find a passenger by a hashed reset token, if the token hasn't expired */
+  findByResetToken(tokenHash: string): Promise<Passenger | null>;
+
+  /**
+   * Set a new password, clear the reset token, and revoke all existing
+   * sessions (tokenVersion bump) — all in one update.
+   */
+  resetPassword(id: string, passwordHash: string): Promise<void>;
 }

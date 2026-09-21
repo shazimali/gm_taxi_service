@@ -13,3 +13,4 @@ export * from './types';
 export * from './jwt';
 export * from './session';
 export * from './guards';
+export * from './resetToken';

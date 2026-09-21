@@ -70,9 +70,14 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // ── 4. /login & /register ─ Public pages ───────────────────────────────
+  // ── 4. /login, /register, /forgot-password & /reset-password ─ Public pages ──
   //    If already authenticated, send to dashboard
-  if (pathname === '/login' || pathname === '/register') {
+  if (
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password'
+  ) {
     if (isAuthenticated) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
@@ -91,5 +96,7 @@ export const config = {
     '/passenger/:path*',
     '/login',
     '/register',
+    '/forgot-password',
+    '/reset-password',
   ],
 };
