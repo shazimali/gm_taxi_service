@@ -12,6 +12,7 @@ const ALLOWED_FOLDERS = new Set([
   'general',
   'settings',
   'fleet',
+  'about',
 ]);
 
 // ── Security: only allow safe image extensions ────────────────────────────────

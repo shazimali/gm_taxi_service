@@ -32,6 +32,11 @@ export async function GET() {
         locationsHeroTitle: 'Our Service Locations',
         locationsHeroSubtitle: 'Luxury Executive Transport Across the Greater Area',
         locationsHeroImage: null,
+        servicesHeroTag: 'PREMIUM EXECUTIVE TRANSPORTATION',
+        servicesHeroTitle: 'Our Luxury Services',
+        servicesHeroDesc:
+          'Setting the standard for executive mobility, luxury Logan Airport transfers, hourly chauffeur service, and corporate transportation across Greater Boston and New England.',
+        servicesHeroImage: null,
       },
     });
   } catch (error) {
@@ -61,6 +66,10 @@ export async function PUT(request: Request) {
       locationsHeroTitle,
       locationsHeroSubtitle,
       locationsHeroImage,
+      servicesHeroTag,
+      servicesHeroTitle,
+      servicesHeroDesc,
+      servicesHeroImage,
     } = body;
 
     const data = {
@@ -75,6 +84,10 @@ export async function PUT(request: Request) {
       ...(locationsHeroTitle !== undefined && { locationsHeroTitle }),
       ...(locationsHeroSubtitle !== undefined && { locationsHeroSubtitle }),
       ...(locationsHeroImage !== undefined && { locationsHeroImage }),
+      ...(servicesHeroTag !== undefined && { servicesHeroTag }),
+      ...(servicesHeroTitle !== undefined && { servicesHeroTitle }),
+      ...(servicesHeroDesc !== undefined && { servicesHeroDesc }),
+      ...(servicesHeroImage !== undefined && { servicesHeroImage }),
     };
 
     const settings = await prisma.siteSetting.upsert({

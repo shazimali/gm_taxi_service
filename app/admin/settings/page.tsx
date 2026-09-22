@@ -14,6 +14,10 @@ interface SiteSettings {
   locationsHeroTitle: string;
   locationsHeroSubtitle: string;
   locationsHeroImage: string;
+  servicesHeroTag: string;
+  servicesHeroTitle: string;
+  servicesHeroDesc: string;
+  servicesHeroImage: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -28,6 +32,11 @@ const DEFAULTS: SiteSettings = {
   locationsHeroTitle: 'Our Service Locations',
   locationsHeroSubtitle: 'Luxury Executive Transport Across the Greater Area',
   locationsHeroImage: '',
+  servicesHeroTag: 'PREMIUM EXECUTIVE TRANSPORTATION',
+  servicesHeroTitle: 'Our Luxury Services',
+  servicesHeroDesc:
+    'Setting the standard for executive mobility, luxury Logan Airport transfers, hourly chauffeur service, and corporate transportation across Greater Boston and New England.',
+  servicesHeroImage: '',
 };
 
 export default function SiteSettingsPage() {
@@ -36,9 +45,10 @@ export default function SiteSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [uploadingField, setUploadingField] = useState<'heroImage' | 'locationsHeroImage' | null>(null);
+  const [uploadingField, setUploadingField] = useState<'heroImage' | 'locationsHeroImage' | 'servicesHeroImage' | null>(null);
   const heroImageInputRef = useRef<HTMLInputElement>(null);
   const locationsHeroImageInputRef = useRef<HTMLInputElement>(null);
+  const servicesHeroImageInputRef = useRef<HTMLInputElement>(null);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -58,6 +68,10 @@ export default function SiteSettingsPage() {
           locationsHeroTitle: s.locationsHeroTitle ?? DEFAULTS.locationsHeroTitle,
           locationsHeroSubtitle: s.locationsHeroSubtitle ?? DEFAULTS.locationsHeroSubtitle,
           locationsHeroImage: s.locationsHeroImage ?? '',
+          servicesHeroTag: s.servicesHeroTag ?? DEFAULTS.servicesHeroTag,
+          servicesHeroTitle: s.servicesHeroTitle ?? DEFAULTS.servicesHeroTitle,
+          servicesHeroDesc: s.servicesHeroDesc ?? DEFAULTS.servicesHeroDesc,
+          servicesHeroImage: s.servicesHeroImage ?? '',
         });
       }
     } catch (e) {
@@ -96,7 +110,7 @@ export default function SiteSettingsPage() {
   };
 
   const handleImageUpload = async (
-    field: 'heroImage' | 'locationsHeroImage',
+    field: 'heroImage' | 'locationsHeroImage' | 'servicesHeroImage',
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
@@ -372,6 +386,99 @@ export default function SiteSettingsPage() {
             </div>
             <span className="admin-form__hint">
               Recommended: wide landscape image (1920×600px). Supports JPEG, PNG, WebP.
+            </span>
+          </div>
+        </div>
+
+        {/* ── Services Page Hero ────────────────── */}
+        <div className="admin-settings-section">
+          <h3 className="admin-settings-section__title">Services Page Hero</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
+            Controls the banner displayed at the top of the public <strong>/services</strong> page.
+          </p>
+
+          <div className="admin-form__group">
+            <label className="admin-form__label">Hero Tag</label>
+            <input
+              type="text"
+              className="admin-form__input"
+              value={formData.servicesHeroTag}
+              onChange={(e) => set('servicesHeroTag', e.target.value)}
+              placeholder="PREMIUM EXECUTIVE TRANSPORTATION"
+            />
+          </div>
+
+          <div className="admin-form__group">
+            <label className="admin-form__label">Hero Heading</label>
+            <input
+              type="text"
+              className="admin-form__input"
+              value={formData.servicesHeroTitle}
+              onChange={(e) => set('servicesHeroTitle', e.target.value)}
+              placeholder="Our Luxury Services"
+            />
+          </div>
+
+          <div className="admin-form__group">
+            <label className="admin-form__label">Hero Description</label>
+            <textarea
+              rows={3}
+              className="admin-form__textarea"
+              value={formData.servicesHeroDesc}
+              onChange={(e) => set('servicesHeroDesc', e.target.value)}
+            />
+          </div>
+
+          <div className="admin-form__group">
+            <label className="admin-form__label">Hero Background Image</label>
+
+            {formData.servicesHeroImage && (
+              <div style={{ marginBottom: '0.75rem', position: 'relative', borderRadius: 8, overflow: 'hidden', maxHeight: 160, background: '#000' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={formData.servicesHeroImage}
+                  alt="Services hero preview"
+                  style={{ width: '100%', height: 160, objectFit: 'cover', opacity: 0.85 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => set('servicesHeroImage', '')}
+                  style={{
+                    position: 'absolute', top: 8, right: 8,
+                    background: 'rgba(244,63,94,0.9)', color: '#fff',
+                    border: 'none', borderRadius: 6, padding: '4px 10px',
+                    cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                  }}
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <input
+                ref={servicesHeroImageInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => handleImageUpload('servicesHeroImage', e)}
+              />
+              <button
+                type="button"
+                className="admin-btn--ghost"
+                onClick={() => servicesHeroImageInputRef.current?.click()}
+                disabled={uploadingField !== null}
+              >
+                {uploadingField === 'servicesHeroImage' ? 'Uploading…' : '📁 Upload Image'}
+              </button>
+              {formData.servicesHeroImage && (
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
+                  {formData.servicesHeroImage}
+                </span>
+              )}
+            </div>
+            <span className="admin-form__hint">
+              Recommended: wide landscape image (1920×600px). Supports JPEG, PNG, WebP. Falls back to a plain background when unset.
             </span>
           </div>
         </div>

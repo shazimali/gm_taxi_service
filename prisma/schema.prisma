@@ -137,8 +137,8 @@ model Booking {
   tipPercent Float? // 0 | 10 | 15 | 18 | 20 | null (custom)
   tipAmount  Float? // dollar amount of tip
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime? // soft delete — set once hold is released/refunded and admin deletes the record
 
   @@map("bookings")
@@ -158,9 +158,66 @@ model SiteSetting {
   locationsHeroTitle    String   @default("Our Service Locations")
   locationsHeroSubtitle String   @default("Luxury Executive Transport Across the Greater Area")
   locationsHeroImage    String? // stored path e.g. /uploads/...
+  // Services page hero
+  servicesHeroTag       String   @default("PREMIUM EXECUTIVE TRANSPORTATION")
+  servicesHeroTitle     String   @default("Our Luxury Services")
+  servicesHeroDesc      String?  @db.Text // falls back to a default paragraph in-app when unset
+  servicesHeroImage     String? // stored path e.g. /uploads/...
   updatedAt             DateTime @updatedAt
 
   @@map("site_settings")
+}
+
+model AboutContent {
+  id String @id @default("default")
+
+  // Hero banner
+  heroTag   String  @default("PROVEN EXCELLENCE IN BOSTON")
+  heroTitle String  @default("About GM Limo Services")
+  heroDesc  String? @db.Text // falls back to a default paragraph in-app when unset
+  heroImage String? // stored path e.g. /uploads/... — falls back to /images/about-hero-bg.webp when unset
+
+  // "Who We Are" section
+  whoTag            String  @default("OUR STORY & VISION")
+  whoTitlePrefix    String  @default("10+ Years of")
+  whoTitleHighlight String  @default("Uncompromising Quality")
+  whoDesc           String? @db.Text // falls back to a default paragraph in-app when unset
+  whoText1          String? @db.Text // falls back to a default paragraph in-app when unset
+  whoText2          String? @db.Text // falls back to a default paragraph in-app when unset
+  whoImage          String? // stored path e.g. /uploads/... — falls back to /images/about-drivers.jpg when unset
+  // JSON array of { icon, title, desc } — icon is a key into lib/aboutIcons.ts
+  featureBoxes      String? @db.Text
+
+  // Core Pillars / Service Commitment section
+  pillarsTag   String  @default("SERVICE COMMITMENT")
+  pillarsTitle String  @default("The GM Luxury Standard")
+  pillarsDesc  String? @db.Text // falls back to a default paragraph in-app when unset
+  // JSON array of { title, desc }
+  pillars      String? @db.Text
+
+  // Stats counter section
+  statsTag    String  @default("MILESTONES OF SUCCESS")
+  statsHeader String  @default("Trusted By Executives & Travelers Nationwide")
+  statsImage  String? // stored path — falls back to /images/Boston-Luxury-Chauffeur.webp when unset
+  // JSON array of { value, label }
+  stats       String? @db.Text
+
+  // Dual CTA cards
+  cta1Tag     String  @default("INDIVIDUAL & FAMILY TRAVEL")
+  cta1Title   String  @default("Reserve Your Private Executive Chauffeur")
+  cta1BtnText String  @default("Book Online Now")
+  cta1BtnLink String  @default("/book")
+  cta1Image   String? // falls back to /images/Event-Transportation-e1763052056749.webp when unset
+
+  cta2Tag     String  @default("CORPORATE ACCOUNTS")
+  cta2Title   String  @default("Need Custom Billing or Fleet Dispatch?")
+  cta2BtnText String  @default("Contact Corporate Team")
+  cta2BtnLink String  @default("/contact")
+  cta2Image   String? // falls back to /images/City-to-City-Transfer-e1763051857279.webp when unset
+
+  updatedAt DateTime @updatedAt
+
+  @@map("about_content")
 }
 
 model Location {
@@ -190,4 +247,3 @@ model AirportTravelRate {
 
   @@map("airport_travel_rates")
 }
-

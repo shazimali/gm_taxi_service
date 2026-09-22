@@ -12,6 +12,7 @@ import {
   ExternalLink,
   MapPin,
   Route,
+  Info,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: '/admin/travel-rates',       label: 'Travel Times & Rates', icon: Route },
   { href: '/admin/locations',          label: 'Locations',            icon: MapPin },
   { href: '/admin/bookings',           label: 'Customer Bookings',    icon: CalendarCheck },
+  { href: '/admin/about',              label: 'About Page',           icon: Info },
   { href: '/admin/settings',           label: 'Site Settings',        icon: Settings },
 ];
 
