@@ -9,7 +9,8 @@ import {
   ArrowRight,
   Search,
   Moon,
-  Bell
+  Bell,
+  Menu
 } from 'lucide-react';
 import { UserSession } from '@/lib/auth';
 import '@/app/admin/admin.css';
@@ -49,7 +50,14 @@ export default function AdminDashboardView({
     .toUpperCase();
 
   return (
-    <div className="admin-layout admin-body" style={{ minHeight: '100vh', width: '100%' }}>
+    <div className="admin-layout admin-body">
+      {/* Pure-CSS mobile sidebar toggle: checked state drives sidebar/backdrop visibility */}
+      <input
+        type="checkbox"
+        id="admin-sidebar-toggle"
+        className="admin-sidebar-toggle-checkbox"
+      />
+
       {/* ── TAILADMIN SIDEBAR ────────────────── */}
       <aside className="admin-sidebar">
         <div className="admin-sidebar__header">
@@ -72,10 +80,24 @@ export default function AdminDashboardView({
         </div>
       </aside>
 
+      <label
+        htmlFor="admin-sidebar-toggle"
+        className="admin-sidebar-backdrop"
+        aria-hidden="true"
+      />
+
       {/* ── TAILADMIN MAIN WRAPPER ───────────── */}
       <div className="admin-main-wrapper">
         {/* Top Header */}
         <header className="admin-header">
+          <label
+            htmlFor="admin-sidebar-toggle"
+            className="admin-sidebar-toggle-btn"
+            aria-label="Toggle menu"
+          >
+            <Menu size={20} />
+          </label>
+
           <div className="admin-header__search">
             <Search size={18} color="#64748b" />
             <input

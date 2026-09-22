@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -26,6 +26,11 @@ const NAV_ITEMS = [
 
 export default function AdminNav() {
   const pathname = usePathname();
+
+  useEffect(() => {
+    const toggle = document.getElementById('admin-sidebar-toggle') as HTMLInputElement | null;
+    if (toggle) toggle.checked = false;
+  }, [pathname]);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard';

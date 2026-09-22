@@ -99,8 +99,18 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
   }, [pickup, dropoff, stopsKey]);
 
   // 2. Fetch server quote from /api/quote
+  // Cache key includes every input that affects the fare (not just the vehicle),
+  // so a stale response for a previous hourlyCount/service/route can never be
+  // mistaken for the quote matching the customer's current selection.
+  const quoteKey = useCallback(
+    (vSlug: string) =>
+      `${vSlug}|${selectedService}|${hourlyCount}|${estimatedMiles}|${estimatedMinutes}`,
+    [selectedService, hourlyCount, estimatedMiles, estimatedMinutes]
+  );
+
   const fetchQuote = useCallback(
     async (vSlug: string) => {
+      const key = quoteKey(vSlug);
       try {
         const res = await fetch('/api/quote', {
           method: 'POST',
@@ -116,7 +126,7 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
 
         if (res.ok) {
           const data = await res.json();
-          setServerQuotes((prev) => ({ ...prev, [vSlug]: data }));
+          setServerQuotes((prev) => ({ ...prev, [key]: data }));
           return data;
         }
       } catch (err) {
@@ -124,7 +134,7 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
       }
       return null;
     },
-    [selectedService, estimatedMiles, estimatedMinutes, hourlyCount]
+    [quoteKey, selectedService, estimatedMiles, estimatedMinutes, hourlyCount]
   );
 
   // Refresh server quotes for the whole fleet whenever route or service changes,
@@ -152,8 +162,9 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
   // Client-side fallback calculation if server response is pending
   const calculateVehiclePrice = useCallback(
     (vehicle: Vehicle): PriceCalculationResult => {
-      if (serverQuotes[vehicle.slug]) {
-        return serverQuotes[vehicle.slug];
+      const key = quoteKey(vehicle.slug);
+      if (serverQuotes[key]) {
+        return serverQuotes[key];
       }
 
       const isHourly = selectedService.toLowerCase().includes('hour');
@@ -161,7 +172,7 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
       return pricingService.calculate({
         serviceType: isHourly ? 'hourly' : 'point-to-point',
         vehicleConfig: {
-          rateHourly: vehicle.rateHourly || 85,
+          rateHourly: vehicle.rateHourly ?? 85,
           baseFare: 65,
           baseMiles: 10,
           perMileRate: 4,
@@ -171,7 +182,7 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
         estimatedMinutes,
       });
     },
-    [serverQuotes, selectedService, hourlyCount, estimatedMiles, estimatedMinutes]
+    [quoteKey, serverQuotes, selectedService, hourlyCount, estimatedMiles, estimatedMinutes]
   );
 
   const chosenVehicleObj =
