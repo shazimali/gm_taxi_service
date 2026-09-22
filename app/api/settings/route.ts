@@ -17,6 +17,7 @@ export async function GET() {
       heroTitleGold: settings?.heroTitleGold || 'Boston Luxury Chauffeur',
       heroTitleMain: settings?.heroTitleMain || '— Logan Airport Car Service',
       heroSubtitle: settings?.heroSubtitle || 'Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers',
+      heroImage: settings?.heroImage || null,
     });
   } catch (error) {
     console.error('Public settings fetch error:', error);

@@ -153,6 +153,7 @@ model SiteSetting {
   heroTitleGold         String   @default("Boston Luxury Chauffeur")
   heroTitleMain         String   @default("— Logan Airport Car Service")
   heroSubtitle          String   @default("Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers")
+  heroImage             String? // stored path e.g. /uploads/... — falls back to /images/hero-bg.jpg when unset
   // Locations page hero
   locationsHeroTitle    String   @default("Our Service Locations")
   locationsHeroSubtitle String   @default("Luxury Executive Transport Across the Greater Area")

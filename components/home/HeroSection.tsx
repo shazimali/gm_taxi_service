@@ -17,6 +17,7 @@ export default async function HeroSection() {
     heroTitleGold: 'Boston Luxury Chauffeur',
     heroTitleMain: '— Logan Airport Car Service',
     heroSubtitle: 'Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers',
+    heroImage: '/images/hero-bg.jpg',
   };
 
   try {
@@ -30,6 +31,7 @@ export default async function HeroSection() {
         heroTitleGold: dbSettings.heroTitleGold || settings.heroTitleGold,
         heroTitleMain: dbSettings.heroTitleMain || settings.heroTitleMain,
         heroSubtitle: dbSettings.heroSubtitle || settings.heroSubtitle,
+        heroImage: dbSettings.heroImage || settings.heroImage,
       };
     }
   } catch (err) {
@@ -40,7 +42,7 @@ export default async function HeroSection() {
     <section
       className="hero hero--bg"
       aria-labelledby="hero-heading"
-      style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
+      style={{ backgroundImage: `url('${settings.heroImage}')` }}
     >
       <div className="hero__inner">
         {/* Eyebrow label */}

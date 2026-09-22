@@ -10,6 +10,7 @@ interface SiteSettings {
   heroTitleGold: string;
   heroTitleMain: string;
   heroSubtitle: string;
+  heroImage: string;
   locationsHeroTitle: string;
   locationsHeroSubtitle: string;
   locationsHeroImage: string;
@@ -23,6 +24,7 @@ const DEFAULTS: SiteSettings = {
   heroTitleGold: 'Boston Luxury Chauffeur',
   heroTitleMain: '— Logan Airport Car Service',
   heroSubtitle: 'Elite Corporate Travel, Private Event Transportation & Logan Airport Transfers',
+  heroImage: '',
   locationsHeroTitle: 'Our Service Locations',
   locationsHeroSubtitle: 'Luxury Executive Transport Across the Greater Area',
   locationsHeroImage: '',
@@ -34,8 +36,9 @@ export default function SiteSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingField, setUploadingField] = useState<'heroImage' | 'locationsHeroImage' | null>(null);
+  const heroImageInputRef = useRef<HTMLInputElement>(null);
+  const locationsHeroImageInputRef = useRef<HTMLInputElement>(null);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -51,6 +54,7 @@ export default function SiteSettingsPage() {
           heroTitleGold: s.heroTitleGold ?? DEFAULTS.heroTitleGold,
           heroTitleMain: s.heroTitleMain ?? DEFAULTS.heroTitleMain,
           heroSubtitle: s.heroSubtitle ?? DEFAULTS.heroSubtitle,
+          heroImage: s.heroImage ?? '',
           locationsHeroTitle: s.locationsHeroTitle ?? DEFAULTS.locationsHeroTitle,
           locationsHeroSubtitle: s.locationsHeroSubtitle ?? DEFAULTS.locationsHeroSubtitle,
           locationsHeroImage: s.locationsHeroImage ?? '',
@@ -91,14 +95,18 @@ export default function SiteSettingsPage() {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    field: 'heroImage' | 'locationsHeroImage',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
+    setUploadingField(field);
     try {
       const form = new FormData();
       form.append('file', file);
+      form.append('folder', 'settings');
 
       const res = await fetch('/api/admin/upload', {
         method: 'POST',
@@ -107,14 +115,15 @@ export default function SiteSettingsPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setFormData((prev) => ({ ...prev, locationsHeroImage: data.url || data.path || '' }));
+        setFormData((prev) => ({ ...prev, [field]: data.url || data.path || '' }));
       } else {
         alert('Image upload failed. Please try again.');
       }
     } catch {
       alert('Error uploading image');
     } finally {
-      setUploading(false);
+      setUploadingField(null);
+      e.target.value = '';
     }
   };
 
@@ -229,6 +238,59 @@ export default function SiteSettingsPage() {
               onChange={(e) => set('heroSubtitle', e.target.value)}
             />
           </div>
+
+          <div className="admin-form__group">
+            <label className="admin-form__label">Hero Background Image</label>
+
+            {formData.heroImage && (
+              <div style={{ marginBottom: '0.75rem', position: 'relative', borderRadius: 8, overflow: 'hidden', maxHeight: 160, background: '#000' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={formData.heroImage}
+                  alt="Home hero preview"
+                  style={{ width: '100%', height: 160, objectFit: 'cover', opacity: 0.85 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => set('heroImage', '')}
+                  style={{
+                    position: 'absolute', top: 8, right: 8,
+                    background: 'rgba(244,63,94,0.9)', color: '#fff',
+                    border: 'none', borderRadius: 6, padding: '4px 10px',
+                    cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                  }}
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <input
+                ref={heroImageInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => handleImageUpload('heroImage', e)}
+              />
+              <button
+                type="button"
+                className="admin-btn--ghost"
+                onClick={() => heroImageInputRef.current?.click()}
+                disabled={uploadingField !== null}
+              >
+                {uploadingField === 'heroImage' ? 'Uploading…' : '📁 Upload Image'}
+              </button>
+              {formData.heroImage && (
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
+                  {formData.heroImage}
+                </span>
+              )}
+            </div>
+            <span className="admin-form__hint">
+              Recommended: wide landscape image (1920×1080px). Supports JPEG, PNG, WebP. Falls back to the default background when unset.
+            </span>
+          </div>
         </div>
 
         {/* ── Locations Page Hero ───────────────── */}
@@ -288,19 +350,19 @@ export default function SiteSettingsPage() {
 
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
               <input
-                ref={fileInputRef}
+                ref={locationsHeroImageInputRef}
                 type="file"
                 accept="image/*"
                 style={{ display: 'none' }}
-                onChange={handleImageUpload}
+                onChange={(e) => handleImageUpload('locationsHeroImage', e)}
               />
               <button
                 type="button"
                 className="admin-btn--ghost"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
+                onClick={() => locationsHeroImageInputRef.current?.click()}
+                disabled={uploadingField !== null}
               >
-                {uploading ? 'Uploading…' : '📁 Upload Image'}
+                {uploadingField === 'locationsHeroImage' ? 'Uploading…' : '📁 Upload Image'}
               </button>
               {formData.locationsHeroImage && (
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
