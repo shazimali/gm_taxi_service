@@ -5,6 +5,8 @@ import { createSessionToken } from '@/lib/auth';
 import { createAdminToken } from '@/lib/auth';
 import { signPassengerToken } from '@/lib/auth';
 import { rateLimit, getClientIp } from '@/lib/rateLimit';
+import { loginSchema } from '@/lib/validation/authSchemas';
+import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
 import { PrismaClient } from '@prisma/client';
 
 export async function POST(request: Request) {
@@ -19,11 +21,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    const parsed = loginSchema.safeParse(await readJsonBody(request));
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
     }
+    const { email, password } = parsed.data;
 
     const cleanEmail = email.toLowerCase().trim();
 

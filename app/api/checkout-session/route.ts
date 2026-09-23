@@ -7,6 +7,8 @@ import { vehicleRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services';
 import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
 import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
+import { checkoutSessionSchema } from '@/lib/validation/bookingSchemas';
+import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,12 +21,15 @@ function normalizeServiceType(st?: string): 'hourly' | 'point-to-point' {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const parsed = checkoutSessionSchema.safeParse(await readJsonBody(req));
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
+    }
     const {
       fullName,
       email,
       phone,
-      serviceType = 'Airport Transportation',
+      serviceType,
       vehicleSlug = 'executive-sedan',
       pickupLocation,
       dropoffLocation,
@@ -40,21 +45,7 @@ export async function POST(req: Request) {
       hourlyCount,
       tipPercent,
       tipAmount = 0,
-    } = body;
-
-    // 1. Validate required basic fields
-    if (!fullName?.trim()) {
-      return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
-    }
-    if (!email?.trim() || !email.includes('@')) {
-      return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
-    }
-    if (!pickupLocation?.trim()) {
-      return NextResponse.json({ error: 'Pickup location is required.' }, { status: 400 });
-    }
-    if (!pickupDate?.trim() || !pickupTime?.trim()) {
-      return NextResponse.json({ error: 'Pickup date and time are required.' }, { status: 400 });
-    }
+    } = parsed.data;
 
     const cleanEmail = email.toLowerCase().trim();
     const cleanPhone = phone ? phone.trim() : null;

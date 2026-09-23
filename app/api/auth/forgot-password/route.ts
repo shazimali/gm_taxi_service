@@ -3,6 +3,8 @@ import { adminRepository, passengerRepository } from '@/lib/repositories';
 import { generateResetToken, hashResetToken, RESET_TOKEN_TTL_MS } from '@/lib/auth';
 import { enqueueEmail } from '@/lib/queue/emailQueue';
 import { rateLimit, getClientIp } from '@/lib/rateLimit';
+import { forgotPasswordSchema } from '@/lib/validation/authSchemas';
+import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
 
 // Generic response for both the "account exists" and "account doesn't exist"
 // cases, so this endpoint can't be used to enumerate registered emails.
@@ -20,11 +22,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email } = await request.json();
-
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
+    const parsed = forgotPasswordSchema.safeParse(await readJsonBody(request));
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
     }
+    const { email } = parsed.data;
 
     const cleanEmail = email.toLowerCase().trim();
     // Prefer APP_URL so links are correct behind a reverse proxy or when the

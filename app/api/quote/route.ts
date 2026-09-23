@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { vehicleRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services/PricingService';
 import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
+import { quoteRequestSchema } from '@/lib/validation/bookingSchemas';
+import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,8 +54,18 @@ async function handleQuote(params: {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const result = await handleQuote(body);
+    const parsed = quoteRequestSchema.safeParse(await readJsonBody(req));
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
+    }
+    const body = parsed.data;
+    const result = await handleQuote({
+      vehicleSlug: body.vehicleSlug || undefined,
+      serviceType: body.serviceType || undefined,
+      estimatedMiles: Number(body.estimatedMiles) || undefined,
+      estimatedMinutes: Number(body.estimatedMinutes) || undefined,
+      hourlyCount: Number(body.hourlyCount) || undefined,
+    });
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Quote Calculation Error (POST):', error);

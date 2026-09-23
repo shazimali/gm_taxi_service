@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { adminRepository, passengerRepository } from '@/lib/repositories';
 import { hashResetToken } from '@/lib/auth';
 import { rateLimit, getClientIp } from '@/lib/rateLimit';
+import { resetPasswordSchema } from '@/lib/validation/authSchemas';
+import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
 
 export async function POST(request: Request) {
   try {
@@ -16,15 +18,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { token, password } = await request.json();
-
-    if (!token || !password) {
-      return NextResponse.json({ error: 'Token and new password are required.' }, { status: 400 });
+    const parsed = resetPasswordSchema.safeParse(await readJsonBody(request));
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
     }
-
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters long.' }, { status: 400 });
-    }
+    const { token, password } = parsed.data;
 
     const tokenHash = hashResetToken(token);
 

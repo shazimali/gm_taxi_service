@@ -5,15 +5,16 @@ import { prisma as globalPrisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { signPassengerToken } from '@/lib/auth';
 import { enqueueEmail } from '@/lib/queue/emailQueue';
+import { registerSchema } from '@/lib/validation/authSchemas';
+import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { fullName, email, password, phone } = body;
-
-    if (!fullName || !email || !password) {
-      return NextResponse.json({ error: 'Full name, email, and password are required.' }, { status: 400 });
+    const parsed = registerSchema.safeParse(await readJsonBody(req));
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
     }
+    const { fullName, email, password, phone } = parsed.data;
 
     const cleanEmail = email.toLowerCase().trim();
 

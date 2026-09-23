@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { createAdminToken } from '@/lib/auth';
 import { rateLimit, getClientIp } from '@/lib/rateLimit';
+import { loginSchema } from '@/lib/validation/authSchemas';
+import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
 
 export async function POST(request: Request) {
   try {
@@ -21,11 +23,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    const parsed = loginSchema.safeParse(await readJsonBody(request));
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
     }
+    const { email, password } = parsed.data;
 
     const user = await prisma.admin.findUnique({
       where: { email: email.toLowerCase().trim() },

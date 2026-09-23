@@ -6,10 +6,12 @@ import { vehicleRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services/PricingService';
 import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
 import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
+import { paymentIntentRequestSchema } from '@/lib/validation/bookingSchemas';
+import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
 
 export const dynamic = 'force-dynamic';
 
-function normalizeServiceType(st?: string): 'hourly' | 'point-to-point' {
+function normalizeServiceType(st?: string | null): 'hourly' | 'point-to-point' {
   if (!st) return 'point-to-point';
   const lower = st.toLowerCase();
   if (lower.includes('hour')) return 'hourly';
@@ -18,7 +20,16 @@ function normalizeServiceType(st?: string): 'hourly' | 'point-to-point' {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    // ── Require authentication ────────────────────────────────────────────
+    const passenger = await getCurrentPassenger();
+    if (!passenger) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+    }
+
+    const parsed = paymentIntentRequestSchema.safeParse(await readJsonBody(req));
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error);
+    }
     const {
       vehicleSlug,
       serviceType = 'Airport Transportation',
@@ -27,13 +38,7 @@ export async function POST(req: Request) {
       hourlyCount,
       pickupLocation,
       dropoffLocation,
-    } = body;
-
-    // ── Require authentication ────────────────────────────────────────────
-    const passenger = await getCurrentPassenger();
-    if (!passenger) {
-      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
-    }
+    } = parsed.data;
 
     // ── 🔒 Security: Compute price strictly server-side from vehicle rates & duration ──
     // Never trust an 'amount' passed by the client!
