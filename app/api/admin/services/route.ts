@@ -5,9 +5,14 @@ import { deleteUploadedFile } from '@/lib/utils/uploads';
 
 export const dynamic = 'force-dynamic';
 
-// GET all services — public, no auth required (services are public catalog data)
+// GET all services (admin). Public pages use /api/services instead.
 export async function GET() {
   try {
+    const admin = await getAuthenticatedAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const rawServices = await prisma.service.findMany({
       orderBy: { displayOrder: 'asc' },
     });

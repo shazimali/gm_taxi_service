@@ -6,6 +6,11 @@ import { deleteUploadedFile } from '@/lib/utils/uploads';
 // GET all vehicles
 export async function GET() {
   try {
+    const admin = await getAuthenticatedAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const vehicles = await prisma.vehicle.findMany({
       orderBy: { displayOrder: 'asc' },
     });
