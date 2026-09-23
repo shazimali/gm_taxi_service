@@ -1,13 +1,28 @@
 import React from 'react';
 import Image from 'next/image';
 import BookingForm from '@/components/forms/BookingForm';
+import { prisma } from '@/lib/prisma';
 
 export const metadata = {
   title: 'Instant Rate Quote & Reservation | GM Limo Services Boston',
   description: 'Book your executive chauffeur or airport transfer online in under 60 seconds. Guaranteed flat rates and 24/7 live dispatch confirmation.',
 };
 
-export default function BookPage() {
+export default async function BookPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  // Preselect the service when arriving from a service's "Book Now" button (?service=<slug>)
+  const { service: serviceSlug } = await searchParams;
+  const initialService =
+    typeof serviceSlug === 'string'
+      ? await prisma.service
+          .findUnique({ where: { slug: serviceSlug }, select: { name: true } })
+          .then((s) => s?.name)
+          .catch(() => undefined)
+      : undefined;
+
   return (
     <div className="contact-page-wrap">
       {/* ── Page Banner / Hero ───────────────────────────────────── */}
@@ -44,7 +59,7 @@ export default function BookPage() {
               </p>
             </div>
 
-            <BookingForm />
+            <BookingForm initialService={initialService} />
           </div>
         </div>
       </section>

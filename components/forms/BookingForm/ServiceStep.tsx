@@ -5,7 +5,7 @@ import { ArrowRight, Loader2, LocateFixed, MapPin, Plus, X } from 'lucide-react'
 import { RouteMapPreview } from './RouteMapPreview';
 import { TransferDatePicker } from './TransferDatePicker';
 import { TransferTimePicker } from './TransferTimePicker';
-import type { StopItem } from './types';
+import { SERVICE_OPTIONS, type StopItem } from './types';
 
 interface ServiceStepProps {
   selectedService: string;
@@ -151,16 +151,11 @@ export const ServiceStep: React.FC<ServiceStepProps> = ({
             height: '48px',
           }}
         >
-          <option value="Airport Transportation">✈️ Airport Transportation</option>
-          <option value="Hourly Private Chauffeur">🕐 Hourly Private Chauffeur</option>
-          <option value="Long Distance City-to-City Transfer">
-            🗺️ Long Distance City-to-City Transfer
-          </option>
-          <option value="Luxury Chauffeur & Limousine">
-            👑 Luxury Chauffeur &amp; Limousine
-          </option>
-          <option value="Event Limo Service">🎉 Event Limo Service</option>
-          <option value="Private Wedding Limo">💒 Private Wedding Limo</option>
+          {SERVICE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </select>
       </div>
 

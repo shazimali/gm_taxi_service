@@ -9,10 +9,15 @@ import { ServiceStep } from './ServiceStep';
 import { VehicleStep } from './VehicleStep';
 import { ConfirmStep } from './ConfirmStep';
 import { SuccessView } from './SuccessView';
-import type { BookingSubmissionStatus } from './types';
+import { SERVICE_OPTIONS, type BookingSubmissionStatus } from './types';
 import { AlertCircle, Info } from 'lucide-react';
 
-export default function BookingForm() {
+interface BookingFormProps {
+  /** Service name to preselect (e.g. when arriving from a service's "Book Now" button). */
+  initialService?: string;
+}
+
+export default function BookingForm({ initialService }: BookingFormProps) {
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<BookingSubmissionStatus>({});
   const [loading, setLoading] = useState(false);
@@ -28,7 +33,12 @@ export default function BookingForm() {
   const location = useLocationSearch();
 
   // 2. Route & Vehicle pricing state & handlers
-  const pricing = useRoutePricing(location.pickup, location.dropoff, location.validStops);
+  const pricing = useRoutePricing(
+    location.pickup,
+    location.dropoff,
+    location.validStops,
+    SERVICE_OPTIONS.some((opt) => opt.value === initialService) ? initialService : undefined
+  );
 
   // 3. Passenger auth state & handlers (used to prefill if logged in)
   const auth = usePassengerAuth();

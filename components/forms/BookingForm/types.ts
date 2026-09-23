@@ -56,3 +56,13 @@ export interface BookingSubmissionStatus {
   message?: string;
   error?: string;
 }
+
+/** Services offered in the booking form dropdown (value must match the DB service name). */
+export const SERVICE_OPTIONS = [
+  { value: 'Airport Transportation', label: '✈️ Airport Transportation' },
+  { value: 'Hourly Private Chauffeur', label: '🕐 Hourly Private Chauffeur' },
+  { value: 'Long Distance City-to-City Transfer', label: '🗺️ Long Distance City-to-City Transfer' },
+  { value: 'Luxury Chauffeur & Limousine', label: '👑 Luxury Chauffeur & Limousine' },
+  { value: 'Event Limo Service', label: '🎉 Event Limo Service' },
+  { value: 'Private Wedding Limo', label: '💒 Private Wedding Limo' },
+] as const;

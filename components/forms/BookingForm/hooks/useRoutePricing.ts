@@ -10,7 +10,12 @@ import {
 } from '@/lib/services';
 import type { PriceCalculationResult } from '@/lib/services';
 
-export function useRoutePricing(pickup: string, dropoff: string, stops: string[] = []) {
+export function useRoutePricing(
+  pickup: string,
+  dropoff: string,
+  stops: string[] = [],
+  initialService = 'Airport Transportation'
+) {
   // Fleet list (vehicle names, images, capacities) is loaded from the database
   // so admin-managed uploads show up in the booking form. Static FLEET_DATA is
   // only the initial render / offline fallback.
@@ -33,7 +38,7 @@ export function useRoutePricing(pickup: string, dropoff: string, stops: string[]
     };
   }, []);
 
-  const [selectedService, setSelectedService] = useState('Airport Transportation');
+  const [selectedService, setSelectedService] = useState(initialService);
   const [selectedVehicle, setSelectedVehicle] = useState(FLEET_DATA[0].slug);
   const [hourlyCount, setHourlyCount] = useState(3);
 
