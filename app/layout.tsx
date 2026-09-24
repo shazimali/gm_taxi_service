@@ -3,6 +3,7 @@ import { Inter, Playfair_Display } from 'next/font/google';
 import './main.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import WhatsAppWidget from '@/components/layout/WhatsAppWidget';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -124,6 +125,7 @@ export default async function RootLayout({
             {children}
           </main>
           <Footer initialSettings={initialSettings} />
+          <WhatsAppWidget phoneTel={initialSettings.phoneTel} />
         </div>
       </body>
     </html>

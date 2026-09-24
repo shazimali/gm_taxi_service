@@ -589,6 +589,31 @@ p {
   }
 }
 
+/* Small phones: keep logo + menu toggle + CTA within the viewport so the page
+   doesn't overflow horizontally (which also pushes fixed widgets off-screen) */
+@media (max-width: 480px) {
+  .site-header__inner {
+    gap: 0.75rem;
+  }
+
+  .site-header .custom-logo {
+    height: 60px;
+  }
+
+  .header-cta.btn--two-lines {
+    padding: 0.4rem 0.9rem;
+  }
+
+  .header-cta.btn--two-lines .btn-subtext {
+    font-size: 0.48rem;
+    letter-spacing: 0.03em;
+  }
+
+  .header-cta.btn--two-lines .btn-maintext {
+    font-size: 0.85rem;
+  }
+}
+
 /* =============================================================================
    7. TOPBAR (REMOVED - Menu CTA preferred)
    ============================================================================= */
@@ -3339,7 +3364,7 @@ p {
 
 .contact-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2.5rem;
 }
 
@@ -4272,4 +4297,37 @@ a.contact-info-item:hover {
   background-color: #c5a059;
   color: #ffffff !important;
   transform: translateY(-2px);
+}
+/* WhatsApp floating widget (neutral class name so ad blockers' social-widget filters don't hide it) */
+.floating-chat-btn {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  transition: transform var(--duration) var(--ease-out), box-shadow var(--duration) var(--ease-out);
+}
+
+.floating-chat-btn:hover,
+.floating-chat-btn:focus-visible {
+  color: #ffffff;
+  transform: scale(1.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 600px) {
+  .floating-chat-btn {
+    right: 1rem;
+    bottom: 1rem;
+    width: 50px;
+    height: 50px;
+  }
 }
