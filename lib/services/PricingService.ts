@@ -6,7 +6,9 @@
  * STEP 1 — Determine the Fare
  *   1A  Hourly:  fare = rate × requested hours (no minimum)
  *   1B  Metered: estimatedMiles <= baseMiles → fare = baseFare
- *                estimatedMiles >  baseMiles → fare = baseFare + (estimatedMiles - baseMiles) × perMileRate
+ *                estimatedMiles >  baseMiles → fare = baseFare + Σ (miles inside each bracket × bracket rate)
+ *                Brackets are progressive (see lib/pricing/mileBrackets.ts). A vehicle with
+ *                no brackets uses a single open-ended bracket at perMileRate.
  *
  * STEP 2 — Tip (UI only — not computed here)
  *
@@ -18,6 +20,11 @@ import type {
   PriceCalculationParams,
   PriceCalculationResult,
 } from './interfaces/IPricingService';
+import {
+  computeTieredFare,
+  validateMileBrackets,
+  type MileBracket,
+} from '@/lib/pricing/mileBrackets';
 
 // ── Sensible fallback rates used when DB fields are null ─────────────────────
 const FALLBACK_RATE_HOURLY = 85;
@@ -43,10 +50,19 @@ export class PricingService implements IPricingService {
       perMileRate:  vehicleConfig.perMileRate ?? FALLBACK_PER_MILE_RATE,
     };
 
+    // Use configured brackets when valid; otherwise one open bracket at perMileRate.
+    const configured = vehicleConfig.mileBrackets ?? [];
+    const brackets: MileBracket[] =
+      configured.length > 0 && validateMileBrackets(configured, cfg.baseMiles) === null
+        ? configured
+        : [{ upToMiles: null, ratePerMile: cfg.perMileRate }];
+
     let baseFare       = 0;
     let fareMode: PriceCalculationResult['fareMode'] = 'metered';
     let fareFormula    = '';
     let fareDurationLabel = '';
+    let fareBreakdown: PriceCalculationResult['fareBreakdown'];
+    let meteredBaseFare: number | undefined;
 
     // ── STEP 1A — Hourly ────────────────────────────────────────────────────
     if (serviceType === 'hourly') {
@@ -56,15 +72,18 @@ export class PricingService implements IPricingService {
       fareFormula = `$${cfg.rateHourly}/hr × ${billableHours} hr${billableHours !== 1 ? 's' : ''}`;
       fareDurationLabel = `${billableHours} hr${billableHours !== 1 ? 's' : ''}`;
     } else {
-      // ── STEP 1B — Point-to-Point: Metered (base-fare / per-mile threshold) ─
-      if (estimatedMiles <= cfg.baseMiles) {
-        baseFare = cfg.baseFare;
-        fareFormula = `Base fare (≤ ${cfg.baseMiles} mi): $${cfg.baseFare}`;
-      } else {
-        const extraMiles = estimatedMiles - cfg.baseMiles;
-        baseFare = cfg.baseFare + extraMiles * cfg.perMileRate;
-        fareFormula = `Base fare $${cfg.baseFare} + ${extraMiles} mi × $${cfg.perMileRate}/mi`;
-      }
+      // ── STEP 1B — Point-to-Point: Metered (base fare + tiered mile brackets) ─
+      const tiered = computeTieredFare(estimatedMiles, cfg.baseFare, cfg.baseMiles, brackets);
+      baseFare = tiered.total;
+      fareBreakdown = tiered.breakdown;
+      meteredBaseFare = cfg.baseFare;
+      fareFormula =
+        tiered.breakdown.length === 0
+          ? `Base fare (≤ ${cfg.baseMiles} mi): $${cfg.baseFare}`
+          : [
+              `Base fare $${cfg.baseFare}`,
+              ...tiered.breakdown.map((l) => `${l.miles} mi × $${l.rate}/mi`),
+            ].join(' + ');
       fareMode = 'metered';
       fareDurationLabel = `${estimatedMiles} mi / ${estimatedMinutes} min`;
     }
@@ -80,6 +99,8 @@ export class PricingService implements IPricingService {
       fareFormula,
       formulaLabel:     fareFormula,
       fareDurationLabel,
+      fareBreakdown,
+      meteredBaseFare,
       totalBeforeTip,
       // Legacy compat fields used by VehicleStep, ConfirmStep, etc.
       totalPrice:   totalBeforeTip.toFixed(2),

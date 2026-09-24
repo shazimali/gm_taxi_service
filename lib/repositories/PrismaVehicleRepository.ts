@@ -47,6 +47,7 @@ export class PrismaVehicleRepository implements IVehicleRepository {
         baseFare: data.baseFare ?? null,
         baseMiles: data.baseMiles ?? null,
         perMileRate: data.perMileRate ?? null,
+        mileBrackets: data.mileBrackets ?? null,
         description: data.description ?? null,
         image: data.image ?? null,
         features: data.features ?? null,

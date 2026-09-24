@@ -73,7 +73,8 @@ model Vehicle {
   rateHourly        Float?
   baseFare          Float? // flat fare for trips at or under baseMiles
   baseMiles         Float? // distance threshold covered by baseFare
-  perMileRate       Float? // $/mile applied to total distance when over baseMiles
+  perMileRate       Float? // legacy single $/mile rate, used when mileBrackets is empty
+  mileBrackets      String?  @db.Text // JSON: [{ upToMiles: number|null, ratePerMile: number }], last is open-ended
   description       String?  @db.Text
   image             String?
   features          String?  @db.Text // JSON string array

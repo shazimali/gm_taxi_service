@@ -181,6 +181,7 @@ export function useRoutePricing(
           baseFare: 65,
           baseMiles: 10,
           perMileRate: 4,
+          mileBrackets: [],
         },
         hourlyCount,
         estimatedMiles,

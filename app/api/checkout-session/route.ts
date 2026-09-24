@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
+import { randomInt } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { signPassengerToken } from '@/lib/auth';
+import { createPlaceholderPasswordHash } from '@/lib/auth/welcomePassword';
 import { vehicleRepository } from '@/lib/repositories';
 import { pricingService } from '@/lib/services';
 import { toVehiclePricingConfig } from '@/lib/repositories/vehiclePricingConfigMapper';
 import { MIN_AMOUNT_USD, MAX_AMOUNT_USD } from '@/lib/pricing/limits';
 import { checkoutSessionSchema } from '@/lib/validation/bookingSchemas';
 import { readJsonBody, validationErrorResponse } from '@/lib/api/errorResponse';
+import { rateLimit, getClientIp } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +23,17 @@ function normalizeServiceType(st?: string): 'hourly' | 'point-to-point' {
 
 export async function POST(req: Request) {
   try {
+    // Anonymous endpoint that creates a passenger, Stripe customer and booking
+    // per call — cap it so it can't be used to spam accounts or bookings.
+    const ip = getClientIp(req);
+    const limitResult = await rateLimit(`checkout_session_${ip}`, 10, 15 * 60 * 1000);
+    if (!limitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many booking attempts. Please try again in a few minutes.' },
+        { status: 429, headers: { 'Retry-After': '900' } }
+      );
+    }
+
     const parsed = checkoutSessionSchema.safeParse(await readJsonBody(req));
     if (!parsed.success) {
       return validationErrorResponse(parsed.error);
@@ -87,18 +100,15 @@ export async function POST(req: Request) {
     });
 
     let isNewPassenger = false;
-    let tempPlainPassword = '';
+    // The real temporary password is only issued (and emailed) after payment
+    // succeeds — see lib/auth/welcomePassword.ts. Until then the account
+    // holds an unusable placeholder hash.
+    let placeholderPasswordHash = '';
 
     if (!passenger) {
       isNewPassenger = true;
-      // Generate a strong, friendly temporary password
-      tempPlainPassword =
-        'GM-' +
-        Math.random().toString(36).substring(2, 7).toUpperCase() +
-        '!' +
-        Math.floor(100 + Math.random() * 900);
-
-      const passwordHash = await bcrypt.hash(tempPlainPassword, 10);
+      placeholderPasswordHash = await createPlaceholderPasswordHash();
+      const passwordHash = placeholderPasswordHash;
 
       // Create Stripe Customer
       let stripeCustomerId: string | null = null;
@@ -136,7 +146,7 @@ export async function POST(req: Request) {
     }
 
     // 5. Generate confirmation number & create pending Booking
-    const confirmationNumber = 'GML-' + Math.floor(100000 + Math.random() * 900000);
+    const confirmationNumber = 'GML-' + randomInt(100000, 1000000);
     const serviceLabel = serviceType.includes('Hourly')
       ? `${serviceType} (${hourlyCount || 2} Hours)`
       : serviceType;
@@ -205,9 +215,28 @@ export async function POST(req: Request) {
 
     const passengerId = passenger.id;
 
+    // Stripe fetches the logo itself, so it must be a public HTTPS URL. On
+    // localhost (http) fall back to the logo already served by the live site.
+    const publicOrigin = (process.env.APP_URL || origin).replace(/\/+$/, '');
+    const logoUrl =
+      process.env.STRIPE_LOGO_URL ||
+      (publicOrigin.startsWith('https://')
+        ? `${publicOrigin}/images/stripe-logo.png`
+        : 'https://gmlimoservices.com/images/logo.png');
+    // A logo uploaded to Stripe (Files API, purpose=business_logo) wins, since it
+    // doesn't depend on the site being publicly reachable.
+    const logoFileId = process.env.STRIPE_LOGO_FILE_ID;
+    const brandingSettings = {
+      display_name: 'GM Limo Services',
+      logo: logoFileId
+        ? { type: 'file' as const, file: logoFileId }
+        : { type: 'url' as const, url: logoUrl },
+    };
+
     function buildSessionParams(customerId: string | null) {
       return {
         mode: 'payment' as const,
+        branding_settings: brandingSettings,
         payment_intent_data: {
           capture_method: 'manual' as const, // 🔒 Places pre-authorization hold on card!
           metadata: {
@@ -226,7 +255,7 @@ export async function POST(req: Request) {
           confirmationNumber: booking.confirmationNumber,
           passengerId,
           isNewPassenger: isNewPassenger ? 'true' : 'false',
-          tempPassword: isNewPassenger ? tempPlainPassword : '',
+          placeholderPasswordHash,
         },
       };
     }
@@ -267,14 +296,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 8. Sign JWT token so returning customer is seamlessly logged in
-    const token = await signPassengerToken({
-      passengerId: passenger.id,
-      email: passenger.email,
-      fullName: passenger.fullName,
-      tokenVersion: passenger.tokenVersion || 1,
-    });
-
     const response = NextResponse.json({
       success: true,
       checkoutUrl: session.url,
@@ -282,14 +303,26 @@ export async function POST(req: Request) {
       bookingId: booking.id,
     });
 
-    // Attach cookie so session persists
-    response.cookies.set('passenger_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
+    // 8. Log in only a passenger account created by this request. An existing
+    // account is never logged in from checkout — anyone can type its email
+    // here, so that would hand over the account. Returning customers log in
+    // with their password to see the booking.
+    if (isNewPassenger) {
+      const token = await signPassengerToken({
+        passengerId: passenger.id,
+        email: passenger.email,
+        fullName: passenger.fullName,
+        tokenVersion: passenger.tokenVersion || 1,
+      });
+
+      response.cookies.set('passenger_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60,
+        path: '/',
+      });
+    }
 
     return response;
   } catch (err: any) {

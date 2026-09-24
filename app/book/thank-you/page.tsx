@@ -4,6 +4,7 @@ import { CheckCircle2, ShieldCheck, Calendar, MapPin, Car, Phone, Mail, ArrowRig
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { enqueueEmail } from '@/lib/queue/emailQueue';
+import { issueWelcomePassword } from '@/lib/auth/welcomePassword';
 import { parseStops } from '@/lib/utils/stops';
 
 export const dynamic = 'force-dynamic';
@@ -34,11 +35,16 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
 
       const bookingId = session.metadata?.bookingId;
       isNewPassenger = session.metadata?.isNewPassenger === 'true';
-      const tempPassword = session.metadata?.tempPassword;
+      const placeholderPasswordHash = session.metadata?.placeholderPasswordHash;
+      const paymentIntent = typeof session.payment_intent === 'string' ? null : session.payment_intent;
       const paymentIntentId =
-        typeof session.payment_intent === 'string'
-          ? session.payment_intent
-          : (session.payment_intent as any)?.id;
+        typeof session.payment_intent === 'string' ? session.payment_intent : paymentIntent?.id;
+      // Only a completed session whose card hold actually went through may
+      // confirm the booking — otherwise anyone opening this URL for an
+      // abandoned checkout would confirm an unpaid ride.
+      const holdAuthorized =
+        session.status === 'complete' &&
+        (paymentIntent?.status === 'requires_capture' || paymentIntent?.status === 'succeeded');
 
       // 2. Find booking
       booking = await prisma.booking.findFirst({
@@ -46,7 +52,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
       });
 
       // 3. Ensure booking is marked confirmed & hold placed (self-healing if webhook hasn't fired yet)
-      if (booking && booking.paymentStatus !== 'HOLD_PLACED') {
+      if (booking && holdAuthorized && booking.paymentStatus !== 'HOLD_PLACED') {
         booking = await prisma.booking.update({
           where: { id: booking.id },
           data: {
@@ -59,7 +65,11 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
         // Send the welcome email first for brand-new passengers, then the
         // booking confirmation, so the account credentials arrive before
         // the ride details.
-        if (isNewPassenger && tempPassword) {
+        const tempPassword =
+          isNewPassenger && placeholderPasswordHash && booking.passengerId
+            ? await issueWelcomePassword(booking.passengerId, placeholderPasswordHash)
+            : null;
+        if (tempPassword) {
           await enqueueEmail('WELCOME_EMAIL', {
             passengerName: booking.fullName,
             email: booking.email,

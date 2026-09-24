@@ -64,7 +64,6 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
   setTipPercent,
   customTipAmount,
   setCustomTipAmount,
-  tipAmount,
   totalWithTip,
   status,
   loading,
@@ -299,70 +298,6 @@ export const ConfirmStep: React.FC<ConfirmStepProps> = ({
           placeholder="e.g. Quiet ride requested, infant rear-facing car seat, or curbside assistance"
           className="form-input"
         />
-      </div>
-
-      {/* ── STEP 4: TRANSPARENT ORDER SUMMARY BREAKDOWN ──── */}
-      <div
-        style={{
-          backgroundColor: '#0f172a',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          color: '#ffffff',
-          border: '1px solid #334155',
-          boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-        }}
-      >
-        <div
-          style={{
-            fontSize: '0.75rem',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: '#c5a46d',
-            marginBottom: '1rem',
-          }}
-        >
-          Quote Breakdown &amp; Output Total (Step 3)
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
-          {/* Step 1: Base Fare */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#cbd5e1' }}>
-              Fare ({currentVehiclePrice.fareFormula || currentVehiclePrice.formulaLabel})
-            </span>
-            <span style={{ fontWeight: 700, color: '#ffffff' }}>
-              ${currentVehiclePrice.baseFare.toFixed(2)}
-            </span>
-          </div>
-
-          {/* Step 2: Optional Tip */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1' }}>
-            <span>Optional Tip (Customer Selected)</span>
-            <span style={{ fontWeight: 700, color: tipAmount > 0 ? '#c5a46d' : '#94a3b8' }}>
-              {tipAmount > 0 ? `+$${tipAmount.toFixed(2)}` : '$0.00'}
-            </span>
-          </div>
-
-          {/* Step 3: Final Total */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderTop: '2px solid rgba(197, 164, 109, 0.4)',
-              paddingTop: '0.75rem',
-              marginTop: '0.25rem',
-            }}
-          >
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff' }}>
-              Final Total (To Pre-Authorize)
-            </span>
-            <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#c5a46d' }}>
-              ${totalWithTip.toFixed(2)}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Stripe Secure Payment Banner */}

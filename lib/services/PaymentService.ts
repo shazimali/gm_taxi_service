@@ -20,6 +20,7 @@ import {
   type Booking,
 } from '@/lib/repositories';
 import { enqueueEmail } from '@/lib/queue/emailQueue';
+import { issueWelcomePassword } from '@/lib/auth/welcomePassword';
 import { parseStops } from '@/lib/utils/stops';
 import { NotFoundError, InvalidStateError, PaymentProviderError } from '@/lib/errors';
 import type {
@@ -164,7 +165,7 @@ export class PaymentService implements IPaymentService {
         const session = event.data.object as Stripe.Checkout.Session;
         const bookingId = session.metadata?.bookingId;
         const isNewPassenger = session.metadata?.isNewPassenger === 'true';
-        const tempPassword = session.metadata?.tempPassword;
+        const placeholderPasswordHash = session.metadata?.placeholderPasswordHash;
         const paymentIntentId =
           typeof session.payment_intent === 'string'
             ? session.payment_intent
@@ -185,7 +186,11 @@ export class PaymentService implements IPaymentService {
         // Send the welcome email first for brand-new passengers, then the
         // booking confirmation, so the account credentials arrive before
         // the ride details.
-        if (isNewPassenger && tempPassword) {
+        const tempPassword =
+          isNewPassenger && placeholderPasswordHash && updated.passengerId
+            ? await issueWelcomePassword(updated.passengerId, placeholderPasswordHash)
+            : null;
+        if (tempPassword) {
           await enqueueEmail('WELCOME_EMAIL', {
             passengerName: updated.fullName,
             email: updated.email,

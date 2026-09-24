@@ -8,6 +8,7 @@
 
 import type { Vehicle } from './interfaces/IVehicleRepository';
 import type { VehiclePricingConfig } from '@/lib/services/interfaces/IPricingService';
+import { parseMileBrackets } from '@/lib/pricing/mileBrackets';
 
 export function toVehiclePricingConfig(vehicle: Vehicle | null): VehiclePricingConfig {
   return {
@@ -15,5 +16,6 @@ export function toVehiclePricingConfig(vehicle: Vehicle | null): VehiclePricingC
     baseFare: vehicle?.baseFare ?? null,
     baseMiles: vehicle?.baseMiles ?? null,
     perMileRate: vehicle?.perMileRate ?? null,
+    mileBrackets: parseMileBrackets(vehicle?.mileBrackets),
   };
 }

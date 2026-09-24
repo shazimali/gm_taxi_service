@@ -2,6 +2,24 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedAdmin } from '@/lib/auth';
 import { deleteUploadedFile } from '@/lib/utils/uploads';
+import { parseMileBrackets, validateMileBrackets } from '@/lib/pricing/mileBrackets';
+
+/**
+ * Normalizes and validates submitted mile brackets.
+ * Returns the value to store (JSON string or null) or an error message.
+ */
+function prepareMileBrackets(
+  raw: unknown,
+  baseMiles: number
+): { value: string | null } | { error: string } {
+  if (raw === null || raw === undefined || raw === '') return { value: null };
+  if (!Array.isArray(raw)) return { error: 'Mile brackets must be a list.' };
+  const brackets = parseMileBrackets(raw);
+  if (brackets.length !== raw.length) return { error: 'Mile brackets contain invalid values.' };
+  const error = validateMileBrackets(brackets, baseMiles);
+  if (error) return { error };
+  return { value: brackets.length ? JSON.stringify(brackets) : null };
+}
 
 // GET all vehicles
 export async function GET() {
@@ -43,6 +61,7 @@ export async function POST(request: Request) {
       baseFare,
       baseMiles,
       perMileRate,
+      mileBrackets,
       features,
       amenities,
       ctaType,
@@ -52,6 +71,11 @@ export async function POST(request: Request) {
 
     if (!name || !slug) {
       return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
+    }
+
+    const brackets = prepareMileBrackets(mileBrackets, Number(baseMiles) || 0);
+    if ('error' in brackets) {
+      return NextResponse.json({ error: brackets.error }, { status: 400 });
     }
 
     const vehicle = await prisma.vehicle.create({
@@ -68,6 +92,7 @@ export async function POST(request: Request) {
         baseFare: baseFare ? Number(baseFare) : null,
         baseMiles: baseMiles ? Number(baseMiles) : null,
         perMileRate: perMileRate ? Number(perMileRate) : null,
+        mileBrackets: brackets.value,
         features: JSON.stringify(Array.isArray(features) ? features : []),
         amenities: JSON.stringify(Array.isArray(amenities) ? amenities : []),
         ctaType: ctaType || 'both',
@@ -114,7 +139,19 @@ export async function PUT(request: Request) {
       data.features = JSON.stringify(data.features);
     }
 
-    const existing = await prisma.vehicle.findUnique({ where: { id }, select: { image: true } });
+    const existing = await prisma.vehicle.findUnique({
+      where: { id },
+      select: { image: true, baseMiles: true },
+    });
+
+    if (data.mileBrackets !== undefined) {
+      const baseMiles = data.baseMiles !== undefined ? data.baseMiles : existing?.baseMiles;
+      const brackets = prepareMileBrackets(data.mileBrackets, baseMiles ?? 0);
+      if ('error' in brackets) {
+        return NextResponse.json({ error: brackets.error }, { status: 400 });
+      }
+      data.mileBrackets = brackets.value;
+    }
 
     const vehicle = await prisma.vehicle.update({
       where: { id },

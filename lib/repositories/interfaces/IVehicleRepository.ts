@@ -18,6 +18,7 @@ export interface Vehicle {
   baseFare: number | null;
   baseMiles: number | null;
   perMileRate: number | null;
+  mileBrackets: string | null; // JSON-serialised MileBracket[]
   description: string | null;
   image: string | null;
   features: string | null; // JSON-serialised string[]
@@ -40,6 +41,7 @@ export interface CreateVehicleData {
   baseFare?: number | null;
   baseMiles?: number | null;
   perMileRate?: number | null;
+  mileBrackets?: string | null;
   description?: string | null;
   image?: string | null;
   features?: string | null;

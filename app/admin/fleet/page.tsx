@@ -2,6 +2,38 @@
 
 import React, { useState, useEffect } from 'react';
 import ImageUploader from '@/components/admin/ImageUploader';
+import {
+  bracketRangeLabel,
+  computeTieredFare,
+  parseMileBrackets,
+  validateMileBrackets,
+  type MileBracket,
+} from '@/lib/pricing/mileBrackets';
+
+/** Editable bracket row; strings so inputs can be temporarily empty. */
+interface BracketRow {
+  upToMiles: string; // ignored for the last (open-ended) row
+  ratePerMile: string;
+}
+
+const toNumberOrNaN = (v: string) => (v.trim() === '' ? NaN : Number(v));
+
+/** Converts form rows to brackets. The last row is always open-ended. */
+function rowsToBrackets(rows: BracketRow[]): MileBracket[] {
+  return rows.map((r, i) => ({
+    upToMiles: i === rows.length - 1 ? null : toNumberOrNaN(r.upToMiles),
+    ratePerMile: toNumberOrNaN(r.ratePerMile),
+  }));
+}
+
+function bracketsToRows(raw: unknown, fallbackRate: number): BracketRow[] {
+  const brackets = parseMileBrackets(raw);
+  if (brackets.length === 0) return [{ upToMiles: '', ratePerMile: String(fallbackRate) }];
+  return brackets.map((b) => ({
+    upToMiles: b.upToMiles === null ? '' : String(b.upToMiles),
+    ratePerMile: String(b.ratePerMile),
+  }));
+}
 
 interface Vehicle {
   id: string;
@@ -17,6 +49,7 @@ interface Vehicle {
   baseFare: number | null;
   baseMiles: number | null;
   perMileRate: number | null;
+  mileBrackets: string | null; // JSON-serialised MileBracket[]
   description: string;
   features: string[] | unknown;
   amenities: string[] | unknown;
@@ -36,6 +69,7 @@ const DEFAULT_FORM = {
   baseFare: 65,
   baseMiles: 10,
   perMileRate: 4,
+  mileBrackets: [{ upToMiles: '', ratePerMile: '4' }] as BracketRow[],
   description: '',
   features: '',   // comma-separated in the form
   amenities: '',  // comma-separated in the form
@@ -48,6 +82,7 @@ export default function FleetAdminPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [formData, setFormData] = useState(DEFAULT_FORM);
+  const [previewMiles, setPreviewMiles] = useState('100');
 
   const fetchVehicles = async () => {
     try {
@@ -79,6 +114,7 @@ export default function FleetAdminPage() {
         baseFare: v.baseFare ?? 65,
         baseMiles: v.baseMiles ?? 10,
         perMileRate: v.perMileRate ?? 4,
+        mileBrackets: bracketsToRows(v.mileBrackets, v.perMileRate ?? 4),
         description: v.description || '',
         features: Array.isArray(v.features) ? (v.features as string[]).join(', ') : '',
         amenities: Array.isArray(v.amenities) ? (v.amenities as string[]).join(', ') : '',
@@ -93,10 +129,15 @@ export default function FleetAdminPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (bracketError) return;
     const method = editingVehicle ? 'PUT' : 'POST';
+    const brackets = rowsToBrackets(formData.mileBrackets);
     const body = {
       ...(editingVehicle ? { id: editingVehicle.id } : {}),
       ...formData,
+      mileBrackets: brackets,
+      // Keep the legacy single rate in sync with the open-ended bracket.
+      perMileRate: brackets[brackets.length - 1].ratePerMile,
       features: formData.features.split(',').map((f) => f.trim()).filter(Boolean),
       amenities: formData.amenities.split(',').map((a) => a.trim()).filter(Boolean),
     };
@@ -132,6 +173,32 @@ export default function FleetAdminPage() {
   const f = formData;
   const set = (field: string, val: unknown) =>
     setFormData((prev) => ({ ...prev, [field]: val }));
+
+  // ── Mile brackets ──────────────────────────
+  const rows = f.mileBrackets;
+  const currentBrackets = rowsToBrackets(rows);
+  const bracketError = validateMileBrackets(currentBrackets, f.baseMiles);
+  const bracketStarts = currentBrackets.map((_, i) =>
+    i === 0 ? f.baseMiles : currentBrackets[i - 1].upToMiles ?? NaN
+  );
+  const preview =
+    !bracketError && Number(previewMiles) >= 0
+      ? computeTieredFare(Number(previewMiles), f.baseFare, f.baseMiles, currentBrackets)
+      : null;
+
+  const updateRow = (index: number, field: keyof BracketRow, value: string) =>
+    set(
+      'mileBrackets',
+      rows.map((r, i) => (i === index ? { ...r, [field]: value } : r))
+    );
+  const addRow = () =>
+    set('mileBrackets', [
+      ...rows.slice(0, -1),
+      { upToMiles: '', ratePerMile: '' },
+      rows[rows.length - 1],
+    ]);
+  const removeRow = (index: number) =>
+    set('mileBrackets', rows.filter((_, i) => i !== index));
 
   return (
     <div>
@@ -283,9 +350,11 @@ export default function FleetAdminPage() {
                   Pricing Engine Parameters
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                  Metered fare: trips ≤ Base Miles cost Base Fare; trips over Base Miles cost Base Fare + (extra miles × Per Mile Rate)
+                  Trips up to Base Miles cost the Base Fare. Miles beyond that are charged bracket by
+                  bracket: each bracket&apos;s rate applies only to the miles inside it. The last bracket
+                  covers every mile above the previous one.
                 </div>
-                <div className="admin-form__row--3">
+                <div className="admin-form__row">
                   <div>
                     <label className="admin-form__label">Base Fare ($)</label>
                     <input
@@ -304,16 +373,122 @@ export default function FleetAdminPage() {
                       onChange={(e) => set('baseMiles', parseFloat(e.target.value) || 0)}
                     />
                   </div>
-                  <div>
-                    <label className="admin-form__label">Per Mile Rate ($)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      className="admin-form__input"
-                      value={f.perMileRate}
-                      onChange={(e) => set('perMileRate', parseFloat(e.target.value) || 0)}
-                    />
+                </div>
+
+                <label className="admin-form__label" style={{ marginTop: '0.75rem' }}>
+                  Mile Brackets
+                </label>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', color: '#64748b', fontSize: '0.75rem' }}>
+                      <th style={{ padding: '0.25rem' }}>From (mi)</th>
+                      <th style={{ padding: '0.25rem' }}>To (mi)</th>
+                      <th style={{ padding: '0.25rem' }}>Rate ($/mi)</th>
+                      <th style={{ padding: '0.25rem', width: '1%' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, i) => {
+                      const isLast = i === rows.length - 1;
+                      const start = bracketStarts[i];
+                      return (
+                        <tr key={i}>
+                          <td style={{ padding: '0.25rem', color: '#334155', whiteSpace: 'nowrap' }}>
+                            {Number.isFinite(start)
+                              ? Number.isInteger(start) ? start + 1 : start
+                              : '—'}
+                          </td>
+                          <td style={{ padding: '0.25rem' }}>
+                            {isLast ? (
+                              <span style={{ color: '#64748b' }}>and above</span>
+                            ) : (
+                              <input
+                                type="number"
+                                min={0}
+                                step="any"
+                                className="admin-form__input"
+                                value={row.upToMiles}
+                                onChange={(e) => updateRow(i, 'upToMiles', e.target.value)}
+                              />
+                            )}
+                          </td>
+                          <td style={{ padding: '0.25rem' }}>
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              className="admin-form__input"
+                              value={row.ratePerMile}
+                              onChange={(e) => updateRow(i, 'ratePerMile', e.target.value)}
+                            />
+                          </td>
+                          <td style={{ padding: '0.25rem' }}>
+                            {!isLast && (
+                              <button
+                                type="button"
+                                className="admin-btn--danger"
+                                onClick={() => removeRow(i)}
+                                aria-label={`Remove bracket ${i + 1}`}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <button
+                  type="button"
+                  className="admin-btn--ghost"
+                  style={{ marginTop: '0.5rem' }}
+                  onClick={addRow}
+                >
+                  + Add bracket
+                </button>
+                {bracketError && (
+                  <div style={{ color: '#dc2626', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    {bracketError}
                   </div>
+                )}
+
+                {/* Fare preview */}
+                <div
+                  style={{
+                    marginTop: '0.75rem',
+                    paddingTop: '0.75rem',
+                    borderTop: '1px dashed #cbd5e1',
+                    fontSize: '0.8rem',
+                    color: '#334155',
+                  }}
+                >
+                  <label className="admin-form__label">Fare preview for trip distance (mi)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="any"
+                    className="admin-form__input"
+                    style={{ maxWidth: '10rem' }}
+                    value={previewMiles}
+                    onChange={(e) => setPreviewMiles(e.target.value)}
+                  />
+                  {preview && (
+                    <div style={{ marginTop: '0.5rem', lineHeight: 1.6 }}>
+                      <div>
+                        Base fare (up to {f.baseMiles} mi): ${f.baseFare.toFixed(2)}
+                      </div>
+                      {preview.breakdown.map((line, i) => (
+                        <div key={i}>
+                          {bracketRangeLabel(line.from, line.to)}: {line.miles} mi × $
+                          {line.rate.toFixed(2)} = ${line.amount.toFixed(2)}
+                        </div>
+                      ))}
+                      <div style={{ fontWeight: 800, color: '#1e293b' }}>
+                        Total fare: ${preview.total.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -367,7 +542,7 @@ export default function FleetAdminPage() {
                 <button type="button" className="admin-btn--cancel" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="admin-btn--save">
+                <button type="submit" className="admin-btn--save" disabled={!!bracketError}>
                   Save Vehicle
                 </button>
               </div>

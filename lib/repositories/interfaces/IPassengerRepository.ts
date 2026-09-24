@@ -52,4 +52,10 @@ export interface IPassengerRepository {
    * sessions (tokenVersion bump) — all in one update.
    */
   resetPassword(id: string, passwordHash: string): Promise<void>;
+
+  /**
+   * Swap the password hash only if it still equals `expectedHash`.
+   * Returns true when this call made the change (compare-and-swap).
+   */
+  replacePasswordIfUnchanged(id: string, expectedHash: string, newHash: string): Promise<boolean>;
 }

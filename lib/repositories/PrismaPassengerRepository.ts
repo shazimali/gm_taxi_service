@@ -91,6 +91,15 @@ export class PrismaPassengerRepository implements IPassengerRepository {
       },
     });
   }
+
+  async replacePasswordIfUnchanged(id: string, expectedHash: string, newHash: string): Promise<boolean> {
+    const client = getClient();
+    const { count } = await client.passenger.updateMany({
+      where: { id, passwordHash: expectedHash },
+      data: { passwordHash: newHash },
+    });
+    return count === 1;
+  }
 }
 
 /** Singleton instance — import this in route handlers */
